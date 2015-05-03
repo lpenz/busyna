@@ -6,6 +6,7 @@ import (
 	"testing"
 )
 
+// TestStraceRun tests basic strace execution
 func TestStraceRun(t *testing.T) {
 	StraceRun("echo asdf > /dev/null", nil, "")
 }
@@ -49,15 +50,21 @@ var straceout = []string{
 	`16820 exit_group(0)                     = ?`,
 }
 
-func TestStraceParse1(t *testing.T) {
+// straceout_iterate writes straceout to a channel, one line at a time.
+func straceout_iterate() <-chan string {
 	c := make(chan string)
 	go func() {
+		defer close(c)
 		for _, l := range straceout {
 			c <- l
 		}
-		close(c)
 	}()
+	return c
+}
 
+// TestStraceParse1 tests strace level1 parser (joining) by counting and
+// checking strings.
+func TestStraceParse1(t *testing.T) {
 	// Count strings that will be parsed away by StraceParser1
 	n := len(straceout)
 	for _, l := range straceout {
@@ -80,7 +87,7 @@ func TestStraceParse1(t *testing.T) {
 
 	// Parse, and check that they went away and that the count is right
 	parsed := make([]string, 0, len(straceout))
-	for l := range StraceParse1(c) {
+	for l := range StraceParse1(straceout_iterate()) {
 		if strings.Contains(l, "resumed") || strings.Contains(l, "finished") {
 			t.Fatal("found invalid string in parsed results: " + l)
 		}

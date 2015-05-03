@@ -10,6 +10,8 @@ import (
 	"regexp"
 )
 
+// Misc: #####################################################################
+
 // tmpend finishes a temporary file by closing its file descriptor and deleting
 // it in the filesystem.
 func tmpend(f *os.File) {
@@ -24,6 +26,18 @@ func tmpend(f *os.File) {
 	}
 	f = nil
 }
+
+func re_findmap(re *regexp.Regexp, l string) map[string]string {
+	m := re.FindAllStringSubmatch(l, -1)[0]
+	names := re.SubexpNames()
+	r := make(map[string]string)
+	for i := 0; i < len(names); i++ {
+		r[names[i]] = m[i]
+	}
+	return r
+}
+
+// strace runner: ############################################################
 
 // StraceRun runs a command using strace and writes the trace information to
 // the returned channel.
@@ -67,8 +81,7 @@ func StraceRun(command string, env []string, dir string) <-chan string {
 		Env:    env,
 	}
 
-	err = cmd.Run()
-	if err != nil {
+	if err = cmd.Run(); err != nil {
 		log.Fatal(err)
 	}
 
@@ -119,8 +132,8 @@ func straceparser1_line(state *strace1_state, line string) <-chan string {
 			if !strace1_endre.MatchString(line) {
 				state.mid = append(state.mid, line)
 			} else {
-				body := strace1_endre.FindAllStringSubmatch(line, -1)[0]
-				c <- state.start + body[3]
+				m := re_findmap(strace1_endre, line)
+				c <- state.start + m["body"]
 				mid := state.mid
 				state.wait = false
 				state.mid = []string{}
@@ -134,8 +147,8 @@ func straceparser1_line(state *strace1_state, line string) <-chan string {
 		} else {
 			switch {
 			case strace1_inire.MatchString(line):
-				m := strace1_inire.FindAllStringSubmatch(line, -1)[0]
-				state.start = m[1] + m[2]
+				m := re_findmap(strace1_inire, line)
+				state.start = m["pid"] + m["ini"]
 				state.wait = true
 			case strace1_usere.MatchString(line):
 				c <- line
