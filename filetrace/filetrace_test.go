@@ -97,3 +97,95 @@ func TestStraceParse1(t *testing.T) {
 		t.Fatal("incorrect len of parsed strings")
 	}
 }
+
+// TestStraceParse2 tests strace level2 parser by counting parsed entities.
+func TestStraceParse2(t *testing.T) {
+	nopen := 0
+	nexec := 0
+	for _, l := range straceout {
+		if strings.Contains(l, " open(") {
+			nopen++
+		}
+		if strings.Contains(l, " execve(") {
+			nexec++
+		}
+	}
+	syscalls := map[string]int{}
+	for info := range StraceParse2(StraceParse1(straceout_iterate())) {
+		syscalls[info.syscall]++
+	}
+	if nopen != syscalls["open"] {
+		t.Errorf("\"open\" count mismatch: %d != %d", nopen, syscalls["open"])
+	}
+	if nexec != syscalls["execve"] {
+		t.Errorf("\"execve\" count mismatch: %d != %d", nexec, syscalls["execve"])
+	}
+}
+
+// TestStraceParse2Args tests strace level2 argument splitting.
+func TestStraceParse2Args(t *testing.T) {
+	tests := []struct {
+		str string
+		ans []string
+	}{
+		{"asdf", []string{"asdf"}},
+		{"as, df", []string{"as", "df"}},
+		{"a {s, d} f", []string{"a {s, d} f"}},
+		{"{as, df}", []string{"{as, df}"}},
+		{`"as, df"`, []string{`"as, df"`}},
+		{`"as, df", gh`, []string{`"as, df"`, "gh"}},
+		{`"as, df\", gh"`, []string{`"as, df\", gh"`}},
+		{`"as, df\""`, []string{`"as, df\""`}},
+	}
+	for _, tst := range tests {
+		a := Straceparser2_argsplit(tst.str)
+
+		if len(a) != len(tst.ans) {
+			t.Fatalf("len(%s)=%d  !=  len(%s)=%d", a, len(a), tst.ans, len(tst.ans))
+		}
+
+		for i := range a {
+			if a[i] != tst.ans[i] {
+				t.Fatalf("%s  !=  %s", a, tst.ans)
+			}
+		}
+	}
+}
+
+// TestStraceParse2Lines tests a specific line-parsing.
+func TestStraceParse2Lines(t *testing.T) {
+	c := make(chan string)
+	go func() {
+		defer close(c)
+		c <- `16821 open("/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3`
+	}()
+	for info := range StraceParse2(c) {
+		tests := []struct {
+			ok  bool
+			str string
+		}{
+			{info.pid == 16821, "pid mismatch"},
+			{info.syscall == "open", "syscall mismatch"},
+			{info.result == 3, "result mismatch"},
+			{info.body == `"/etc/ld.so.cache", O_RDONLY|O_CLOEXEC`, "body mismatch"},
+			{info.err == "", "error mismatch"},
+		}
+		for _, tst := range tests {
+			if !tst.ok {
+				t.Error(tst.str)
+			}
+		}
+		ans := []string{
+			`"/etc/ld.so.cache"`,
+			`O_RDONLY|O_CLOEXEC`,
+		}
+		if len(ans) != len(info.args) {
+			t.Errorf("args len mismatch: len(%s)=%d != len(%s)=%d", info.args, len(info.args), ans, len(ans))
+		}
+		for i := 0; i < len(info.args); i++ {
+			if ans[i] != info.args[i] {
+				t.Errorf("arg %d mismatch", i)
+			}
+		}
+	}
+}

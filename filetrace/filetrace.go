@@ -8,6 +8,8 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"strconv"
+	"strings"
 )
 
 // Misc: #####################################################################
@@ -174,6 +176,78 @@ func StraceParse1(c <-chan string) <-chan string {
 			for l2 := range straceparser1_line(&state, l) {
 				d <- l2
 			}
+		}
+	}()
+	return d
+}
+
+// strace level 2 parser: ####################################################
+
+var strace2_re = regexp.MustCompile(`(?P<pid>\d+)\s+(?P<syscall>[^(]+)\((?P<body>.*)\)\s+= (?P<result>((-?[0-9]+)|(\?)))( (?P<error>((([^ ]+) \(.*\))|<unavailable>)))?$`)
+
+type Strace2Info struct {
+	pid     int
+	syscall string
+	body    string
+	result  int
+	err     string
+	args    []string
+}
+
+func Straceparser2_argsplit(s string) []string {
+	args := []string{}
+	arg := []string{}
+	seps := map[string]string{`"`: `"`, "{": "}", "[": "]"}
+	inside := ""
+	for _, a0 := range s {
+		a := string(a0)
+		arg = append(arg, a)
+		l := len(arg)
+		if inside == "" && l > 2 && arg[l-2] == "," && arg[l-1] == " " {
+			args = append(args, strings.Join(arg[:l-2], ""))
+			arg = []string{}
+			continue
+		}
+		switch {
+		case inside != "" && a == seps[inside] && !(arg[l-2] == `\` && arg[l-1] == `"`):
+			inside = ""
+		case inside == "" && seps[a] != "":
+			inside = a
+		}
+	}
+	args = append(args, strings.Join(arg, ""))
+	return args
+}
+
+func StraceParse2(c <-chan string) <-chan Strace2Info {
+	d := make(chan Strace2Info)
+	go func() {
+		defer close(d)
+		for l := range c {
+			if !strace2_re.MatchString(l) {
+				continue
+			}
+			m := re_findmap(strace2_re, l)
+			pid, err := strconv.Atoi(m["pid"])
+			if err != nil {
+				log.Fatalf("could not convert \"%s\" to pid (%s)", m["pid"], err.Error())
+			}
+			result := 0
+			if m["result"] != "?" {
+				result, err = strconv.Atoi(m["result"])
+				if err != nil {
+					log.Fatal("could not convert to result: " + m["result"])
+				}
+			}
+			info := Strace2Info{
+				pid:     pid,
+				body:    m["body"],
+				syscall: m["syscall"],
+				err:     m["error"],
+				result:  result,
+				args:    Straceparser2_argsplit(m["body"]),
+			}
+			d <- info
 		}
 	}()
 	return d
