@@ -256,3 +256,40 @@ func StraceParse2(c <-chan string) <-chan Strace2Info {
 	}()
 	return d
 }
+
+// strace level 3 parser: ####################################################
+
+// StraceParse3 uses the structured strace output to generate the
+// files read/written information.
+func StraceParse3(c <-chan Strace2Info) (map[string]bool, map[string]bool) {
+	r := make(map[string]bool)
+	w := make(map[string]bool)
+	for i := range c {
+		switch i.syscall {
+		case "creat":
+			w[i.args[0][1:len(i.args[0])-1]] = true
+		case "open":
+			if i.result != -1 {
+				filename := i.args[0][1 : len(i.args[0])-1]
+				args := i.args
+				switch {
+				case strings.Contains(args[1], "O_RDONLY"):
+					r[filename] = true
+				case strings.Contains(args[1], "O_WRONLY"):
+					w[filename] = true
+				default:
+					log.Fatalf("unable to determine operation with %s", args[1])
+				}
+			}
+		}
+	}
+	return r, w
+}
+
+// top function: #############################################################
+
+// FileTrace runs the given command and return two channels: the first with the
+// files read and the second with the files written.
+func FileTrace(command string, env []string, dir string) (map[string]bool, map[string]bool) {
+	return StraceParse3(StraceParse2(StraceParse1(StraceRun(command, env, dir))))
+}

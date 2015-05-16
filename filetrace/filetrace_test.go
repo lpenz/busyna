@@ -183,3 +183,31 @@ func TestStraceParse2Lines(t *testing.T) {
 		}
 	}
 }
+
+// TestStraceParse3 tests StraceParse3 and StraceParse2
+func TestStraceParse3(t *testing.T) {
+	c := make(chan string)
+	go func() {
+		defer close(c)
+		c <- `16821 open("/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3`
+		c <- `16821 open("w", O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC) = 4`
+		c <- `16821 open("r", O_RDONLY|O_CLOEXEC) = 5`
+		c <- `16821 creat("c", 01)                          = 6`
+
+	}()
+	r, w := StraceParse3(StraceParse2(c))
+	rok := map[string]bool{
+		"/etc/ld.so.cache": true,
+		"r":                true,
+	}
+	if !reflect.DeepEqual(r, rok) {
+		t.Fatal(r, "!=", rok)
+	}
+	wok := map[string]bool{
+		"w": true,
+		"c": true,
+	}
+	if !reflect.DeepEqual(w, wok) {
+		t.Fatal(w, "!=", wok)
+	}
+}
