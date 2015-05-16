@@ -185,6 +185,7 @@ func StraceParse1(c <-chan string) <-chan string {
 
 var strace2_re = regexp.MustCompile(`(?P<pid>\d+)\s+(?P<syscall>[^(]+)\((?P<body>.*)\)\s+= (?P<result>((-?[0-9]+)|(\?)))( (?P<error>((([^ ]+) \(.*\))|<unavailable>)))?$`)
 
+// Strace2Info is the structured strace output.
 type Strace2Info struct {
 	pid     int
 	syscall string
@@ -194,6 +195,7 @@ type Strace2Info struct {
 	args    []string
 }
 
+// Straceparser2_argsplit splits strace function arguments into a list.
 func Straceparser2_argsplit(s string) []string {
 	args := []string{}
 	arg := []string{}
@@ -219,6 +221,8 @@ func Straceparser2_argsplit(s string) []string {
 	return args
 }
 
+// StraceParse2: strace level 2 parser that interprets complete lines and
+// returns the structured information.
 func StraceParse2(c <-chan string) <-chan Strace2Info {
 	d := make(chan Strace2Info)
 	go func() {

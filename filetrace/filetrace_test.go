@@ -1,6 +1,7 @@
 package filetrace
 
 import (
+	"reflect"
 	"regexp"
 	"strings"
 	"testing"
@@ -98,8 +99,8 @@ func TestStraceParse1(t *testing.T) {
 	}
 }
 
-// TestStraceParse2 tests strace level2 parser by counting parsed entities.
-func TestStraceParse2(t *testing.T) {
+// TestStraceParse2Basic tests strace level2 parser by counting parsed entities.
+func TestStraceParse2Basic(t *testing.T) {
 	nopen := 0
 	nexec := 0
 	for _, l := range straceout {
@@ -139,15 +140,8 @@ func TestStraceParse2Args(t *testing.T) {
 	}
 	for _, tst := range tests {
 		a := Straceparser2_argsplit(tst.str)
-
-		if len(a) != len(tst.ans) {
-			t.Fatalf("len(%s)=%d  !=  len(%s)=%d", a, len(a), tst.ans, len(tst.ans))
-		}
-
-		for i := range a {
-			if a[i] != tst.ans[i] {
-				t.Fatalf("%s  !=  %s", a, tst.ans)
-			}
+		if !reflect.DeepEqual(a, tst.ans) {
+			t.Fatal(a, "!=", tst.ans)
 		}
 	}
 }
