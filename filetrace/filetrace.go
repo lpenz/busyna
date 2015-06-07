@@ -8,6 +8,8 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -60,7 +62,7 @@ func StraceRun(command string, env []string, dir string) <-chan string {
 		"-f",
 		"-a0",
 		"-s1024",
-		"-etrace=execve,clone,vfork,chdir,creat,unlink,unlinkat,rename,mkdir,rmdir,open",
+		"-etrace=execve,clone,vfork,chdir,creat,rename,mkdir,rmdir,open",
 		"-o" + straceout.Name(),
 		"/bin/sh",
 		cmdfile.Name(),
@@ -261,29 +263,38 @@ func StraceParse2(c <-chan string) <-chan Strace2Info {
 func StraceParse3(c <-chan Strace2Info) (map[string]bool, map[string]bool) {
 	r := make(map[string]bool)
 	w := make(map[string]bool)
+	wd, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+	dir := wd
 	for i := range c {
+		if i.result < 0 {
+			continue
+		}
 		switch i.syscall {
 		case "creat":
 			w[i.args[0][1:len(i.args[0])-1]] = true
 		case "open":
-			if i.result != -1 {
-				filename := i.args[0][1 : len(i.args[0])-1]
-				args := i.args
-				switch {
-				case strings.Contains(args[1], "O_RDONLY"):
-					r[filename] = true
-				case strings.Contains(args[1], "O_WRONLY"):
-					w[filename] = true
-				default:
-					log.Fatalf("unable to determine operation with %s", args[1])
-				}
+			filename := i.args[0][1 : len(i.args[0])-1]
+			if !path.IsAbs(filename) {
+				filename, _ = filepath.Rel(wd, path.Join(dir, filename))
+			}
+			args := i.args
+			switch {
+			case strings.Contains(args[1], "O_RDONLY"):
+				r[filename] = true
+			case strings.Contains(args[1], "O_WRONLY"):
+				w[filename] = true
+			default:
+				log.Fatalf("unable to determine operation with %s", args[1])
 			}
 		case "unlinkat":
-			if i.result != -1 {
-				filename := i.args[1][1 : len(i.args[1])-1]
-				delete(r, filename)
-				delete(w, filename)
-			}
+			filename := i.args[1][1 : len(i.args[1])-1]
+			delete(r, filename)
+			delete(w, filename)
+		case "chdir":
+			dir = i.args[0][1 : len(i.args[0])-1]
 		}
 	}
 	return r, w
@@ -294,5 +305,19 @@ func StraceParse3(c <-chan Strace2Info) (map[string]bool, map[string]bool) {
 // FileTrace runs the given command and return two channels: the first with the
 // files read and the second with the files written.
 func FileTrace(command string, env []string, dir string) (map[string]bool, map[string]bool) {
-	return StraceParse3(StraceParse2(StraceParse1(StraceRun(command, env, dir))))
+	r, w := StraceParse3(StraceParse2(StraceParse1(StraceRun(command, env, dir))))
+	/* Failsafe: remove references to files that are no longer there */
+	for f := range r {
+		if st, err := os.Stat(f); os.IsNotExist(err) || !st.Mode().IsRegular() {
+			fmt.Println("r", f)
+			delete(r, f)
+		}
+	}
+	for f := range w {
+		if st, err := os.Stat(f); os.IsNotExist(err) || !st.Mode().IsRegular() {
+			fmt.Println("w", f)
+			delete(w, f)
+		}
+	}
+	return r, w
 }

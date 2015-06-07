@@ -76,7 +76,7 @@ func TestStraceParse1(t *testing.T) {
 		}
 		m, err := regexp.MatchString("^[0-9]+ \\?.*", l)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		if m {
 			n--
@@ -84,19 +84,19 @@ func TestStraceParse1(t *testing.T) {
 		}
 	}
 	if n == len(straceout) {
-		t.Fatal("test string has no level 1 parser tokens")
+		t.Error("test string has no level 1 parser tokens")
 	}
 
 	// Parse, and check that they went away and that the count is right
 	parsed := make([]string, 0, len(straceout))
 	for l := range StraceParse1(straceout_iterate()) {
 		if strings.Contains(l, "resumed") || strings.Contains(l, "finished") {
-			t.Fatal("found invalid string in parsed results: " + l)
+			t.Error("found invalid string in parsed results: " + l)
 		}
 		parsed = append(parsed, l)
 	}
 	if len(parsed) != n {
-		t.Fatal("incorrect len of parsed strings")
+		t.Error("incorrect len of parsed strings")
 	}
 }
 
@@ -142,7 +142,7 @@ func TestStraceParse2Args(t *testing.T) {
 	for _, tst := range tests {
 		a := StraceParse2_argsplit(tst.str)
 		if !reflect.DeepEqual(a, tst.ans) {
-			t.Fatal(a, "!=", tst.ans)
+			t.Error(a, "!=", tst.ans)
 		}
 	}
 }
@@ -202,14 +202,14 @@ func TestStraceParse3(t *testing.T) {
 		"r":                true,
 	}
 	if !reflect.DeepEqual(r, rok) {
-		t.Fatal(r, "!=", rok)
+		t.Error(r, "!=", rok)
 	}
 	wok := map[string]bool{
 		"w": true,
 		"c": true,
 	}
 	if !reflect.DeepEqual(w, wok) {
-		t.Fatal(w, "!=", wok)
+		t.Error(w, "!=", wok)
 	}
 }
 
@@ -236,10 +236,10 @@ func filetrace_test(t *testing.T, cmd string, rok map[string]bool, wok map[strin
 		rtst[r] = true
 	}
 	if !reflect.DeepEqual(rtst, rtst) {
-		t.Fatal("r", rt, "!=", rtst)
+		t.Error("r", rt, "!=", rtst)
 	}
 	if !reflect.DeepEqual(wt, wok) {
-		t.Fatal("w", wt, "!=", wok)
+		t.Error("w", wt, "!=", wok)
 	}
 }
 
@@ -259,5 +259,21 @@ func TestA_echocat(t *testing.T) {
 	filetrace_test(t,
 		"cat t > /dev/null",
 		map[string]bool{"t": true},
-		map[string]bool{"/dev/null": true})
+		empty)
+}
+
+// TestA_dirs tests directory chaging.
+func TestA_dirs(t *testing.T) {
+	filetrace_test(t,
+		"mkdir d; cd d; echo asdf > t",
+		empty,
+		map[string]bool{"d/t": true})
+	defer func() {
+		if err := os.Remove("d/t"); err != nil {
+			t.Error(err)
+		}
+		if err := os.Remove("d"); err != nil {
+			t.Error(err)
+		}
+	}()
 }
