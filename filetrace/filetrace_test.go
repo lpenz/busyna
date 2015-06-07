@@ -139,7 +139,7 @@ func TestStraceParse2Args(t *testing.T) {
 		{`"as, df\""`, []string{`"as, df\""`}},
 	}
 	for _, tst := range tests {
-		a := Straceparser2_argsplit(tst.str)
+		a := StraceParse2_argsplit(tst.str)
 		if !reflect.DeepEqual(a, tst.ans) {
 			t.Fatal(a, "!=", tst.ans)
 		}
