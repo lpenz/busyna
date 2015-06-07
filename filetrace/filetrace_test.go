@@ -1,6 +1,7 @@
 package filetrace
 
 import (
+	"os"
 	"reflect"
 	"regexp"
 	"strings"
@@ -210,4 +211,53 @@ func TestStraceParse3(t *testing.T) {
 	if !reflect.DeepEqual(w, wok) {
 		t.Fatal(w, "!=", wok)
 	}
+}
+
+// Test real applications:
+
+// strace_r_base has the base read files for the OS where the tests are run.
+var strace_r_base map[string]bool
+
+// empty is an empty map
+var empty = map[string]bool{}
+
+// filetrace_test is the primitive test function that runs the provided command
+// and checks if the set of files read and written match the ones provided.
+func filetrace_test(t *testing.T, cmd string, rok map[string]bool, wok map[string]bool) {
+	rt, wt := FileTrace(cmd, nil, "")
+	if len(strace_r_base) == 0 {
+		strace_r_base, _ = FileTrace("", nil, "")
+	}
+	rtst := map[string]bool{}
+	for r := range rok {
+		rtst[r] = true
+	}
+	for r := range strace_r_base {
+		rtst[r] = true
+	}
+	if !reflect.DeepEqual(rtst, rtst) {
+		t.Fatal("r", rt, "!=", rtst)
+	}
+	if !reflect.DeepEqual(wt, wok) {
+		t.Fatal("w", wt, "!=", wok)
+	}
+}
+
+// TestA_echocat is the base test of read/write that runs an echo with the
+// output redirected to a file, and a cat that reads that file.
+func TestA_echocat(t *testing.T) {
+	empty := map[string]bool{}
+	filetrace_test(t,
+		"echo asdf > t",
+		empty,
+		map[string]bool{"t": true})
+	defer func() {
+		if err := os.Remove("t"); err != nil {
+			t.Error(err)
+		}
+	}()
+	filetrace_test(t,
+		"cat t > /dev/null",
+		map[string]bool{"t": true},
+		map[string]bool{"/dev/null": true})
 }

@@ -3,6 +3,7 @@ package filetrace
 
 import (
 	"bufio"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -46,12 +47,8 @@ func re_findmap(re *regexp.Regexp, l string) map[string]string {
 // The environment variables and working directory can be specified.
 func StraceRun(command string, env []string, dir string) <-chan string {
 	cmdfile, err := ioutil.TempFile("", "busyna-strace-cmdfile-")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer tmpend(cmdfile)
-
 	cmdfile.WriteString(command)
+	cmdfile.WriteString(fmt.Sprint("\n\n\nrm -f ", cmdfile.Name(), "\n"))
 	straceout, err := ioutil.TempFile("", "busyna-strace-output-")
 	if err != nil {
 		log.Fatal(err)
@@ -63,7 +60,7 @@ func StraceRun(command string, env []string, dir string) <-chan string {
 		"-f",
 		"-a0",
 		"-s1024",
-		"-etrace=execve,clone,vfork,chdir,creat,unlink,rename,mkdir,rmdir,open",
+		"-etrace=execve,clone,vfork,chdir,creat,unlink,unlinkat,rename,mkdir,rmdir,open",
 		"-o" + straceout.Name(),
 		"/bin/sh",
 		cmdfile.Name(),
@@ -280,6 +277,12 @@ func StraceParse3(c <-chan Strace2Info) (map[string]bool, map[string]bool) {
 				default:
 					log.Fatalf("unable to determine operation with %s", args[1])
 				}
+			}
+		case "unlinkat":
+			if i.result != -1 {
+				filename := i.args[1][1 : len(i.args[1])-1]
+				delete(r, filename)
+				delete(w, filename)
 			}
 		}
 	}
