@@ -32,7 +32,7 @@ func tmpend(f *os.File) {
 	f = nil
 }
 
-func re_findmap(re *regexp.Regexp, l string) map[string]string {
+func reFindMap(re *regexp.Regexp, l string) map[string]string {
 	m := re.FindAllStringSubmatch(l, -1)[0]
 	names := re.SubexpNames()
 	r := make(map[string]string)
@@ -109,51 +109,51 @@ func StraceRun(command string, env []string, dir string) <-chan string {
 
 // strace level 1 parser: ####################################################
 
-var straceparse1_basre = regexp.MustCompile(`^(?P<pid>\d+)\s+`)
-var straceparse1_sigre = regexp.MustCompile(`^(?P<pid>\d+)\s+--- (?P<signal>[A-Z]+) \(([a-zA-Z ]+)\) @ [0-9]+ \([0-9]+\) ---$`)
-var straceparse1_inire = regexp.MustCompile(`^(?P<pid>\d+)(?P<ini>\s+[^(]+\(.*) <unfinished ...>$`)
-var straceparse1_endre = regexp.MustCompile(`^(?P<pid>\d+)\s+\<\.\.\.\s+(?P<func>[^?][^ ]+) resumed\> (?P<body>.*)$`)
-var straceparse1_usere = regexp.MustCompile(`^(?P<pid>\d+)\s+(?P<func>[^(]+)(?P<body>\(.*\s+= ((-?[0-9]+)|(\?))( \(.*\))?)`)
+var straceparse1Basre = regexp.MustCompile(`^(?P<pid>\d+)\s+`)
+var straceparse1Sigre = regexp.MustCompile(`^(?P<pid>\d+)\s+--- (?P<signal>[A-Z]+) \(([a-zA-Z ]+)\) @ [0-9]+ \([0-9]+\) ---$`)
+var straceparse1Inire = regexp.MustCompile(`^(?P<pid>\d+)(?P<ini>\s+[^(]+\(.*) <unfinished ...>$`)
+var straceparse1Endre = regexp.MustCompile(`^(?P<pid>\d+)\s+\<\.\.\.\s+(?P<func>[^?][^ ]+) resumed\> (?P<body>.*)$`)
+var straceparse1Usere = regexp.MustCompile(`^(?P<pid>\d+)\s+(?P<func>[^(]+)(?P<body>\(.*\s+= ((-?[0-9]+)|(\?))( \(.*\))?)`)
 
-type straceparse1_state struct {
+type straceparse1State struct {
 	wait  bool
 	mid   []string
 	start string
 }
 
 // Parse a single line of strace; can render multiple lines from state.
-func straceparse1_line(state *straceparse1_state, line string) <-chan string {
-	if !straceparse1_basre.MatchString(line) {
+func straceparse1Line(state *straceparse1State, line string) <-chan string {
+	if !straceparse1Basre.MatchString(line) {
 		log.Fatal("strace1: could not match strace base in " + line)
 	}
 	c := make(chan string)
 	go func() {
 		defer close(c)
 		if state.wait {
-			if !straceparse1_endre.MatchString(line) {
+			if !straceparse1Endre.MatchString(line) {
 				state.mid = append(state.mid, line)
 			} else {
-				m := re_findmap(straceparse1_endre, line)
+				m := reFindMap(straceparse1Endre, line)
 				c <- state.start + m["body"]
 				mid := state.mid
 				state.wait = false
 				state.mid = []string{}
 				state.start = ""
 				for _, l := range mid {
-					for l2 := range straceparse1_line(state, l) {
+					for l2 := range straceparse1Line(state, l) {
 						c <- l2
 					}
 				}
 			}
 		} else {
 			switch {
-			case straceparse1_inire.MatchString(line):
-				m := re_findmap(straceparse1_inire, line)
+			case straceparse1Inire.MatchString(line):
+				m := reFindMap(straceparse1Inire, line)
 				state.start = m["pid"] + m["ini"]
 				state.wait = true
-			case straceparse1_usere.MatchString(line):
+			case straceparse1Usere.MatchString(line):
 				c <- line
-			case straceparse1_sigre.MatchString(line):
+			case straceparse1Sigre.MatchString(line):
 				// do nothing, we cannot deal with signals
 			default:
 				// invalid line, skip
@@ -164,15 +164,14 @@ func straceparse1_line(state *straceparse1_state, line string) <-chan string {
 	return c
 }
 
-// StraceParse1: strace level 1 parser that joins unfinished lines in proper
-// order.
+// StraceParse1 is the parser that joins unfinished lines in proper order.
 func StraceParse1(c <-chan string) <-chan string {
 	d := make(chan string)
 	go func() {
 		defer close(d)
-		state := straceparse1_state{false, []string{}, ""}
+		state := straceparse1State{false, []string{}, ""}
 		for l := range c {
-			for l2 := range straceparse1_line(&state, l) {
+			for l2 := range straceparse1Line(&state, l) {
 				d <- l2
 			}
 		}
@@ -182,7 +181,7 @@ func StraceParse1(c <-chan string) <-chan string {
 
 // strace level 2 parser: ####################################################
 
-var strace2_re = regexp.MustCompile(`(?P<pid>\d+)\s+(?P<syscall>[^(]+)\((?P<body>.*)\)\s+= (?P<result>((-?[0-9]+)|(\?)))( (?P<error>((([^ ]+) \(.*\))|<unavailable>)))?$`)
+var strace2Re = regexp.MustCompile(`(?P<pid>\d+)\s+(?P<syscall>[^(]+)\((?P<body>.*)\)\s+= (?P<result>((-?[0-9]+)|(\?)))( (?P<error>((([^ ]+) \(.*\))|<unavailable>)))?$`)
 
 // Strace2Info is the structured strace output.
 type Strace2Info struct {
@@ -194,8 +193,8 @@ type Strace2Info struct {
 	args    []string
 }
 
-// StraceParse2_argsplit splits strace function arguments into a list.
-func StraceParse2_argsplit(s string) []string {
+// StraceParse2Argsplit splits strace function arguments into a list.
+func StraceParse2Argsplit(s string) []string {
 	args := []string{}
 	arg := []string{}
 	seps := map[string]string{`"`: `"`, "{": "}", "[": "]"}
@@ -220,17 +219,16 @@ func StraceParse2_argsplit(s string) []string {
 	return args
 }
 
-// StraceParse2: strace level 2 parser that interprets complete lines and
-// returns the structured information.
+// StraceParse2 is the parser that interprets complete lines and returns the structured information.
 func StraceParse2(c <-chan string) <-chan Strace2Info {
 	d := make(chan Strace2Info)
 	go func() {
 		defer close(d)
 		for l := range c {
-			if !strace2_re.MatchString(l) {
+			if !strace2Re.MatchString(l) {
 				continue
 			}
-			m := re_findmap(strace2_re, l)
+			m := reFindMap(strace2Re, l)
 			pid, err := strconv.Atoi(m["pid"])
 			if err != nil {
 				log.Fatalf("could not convert \"%s\" to pid (%s)", m["pid"], err.Error())
@@ -248,7 +246,7 @@ func StraceParse2(c <-chan string) <-chan Strace2Info {
 				syscall: m["syscall"],
 				err:     m["error"],
 				result:  result,
-				args:    StraceParse2_argsplit(m["body"]),
+				args:    StraceParse2Argsplit(m["body"]),
 			}
 			d <- info
 		}

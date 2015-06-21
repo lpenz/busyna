@@ -52,8 +52,8 @@ var straceout = []string{
 	`16820 exit_group(0)                     = ?`,
 }
 
-// straceout_iterate writes straceout to a channel, one line at a time.
-func straceout_iterate() <-chan string {
+// straceoutIterate writes straceout to a channel, one line at a time.
+func straceoutIterate() <-chan string {
 	c := make(chan string)
 	go func() {
 		defer close(c)
@@ -89,7 +89,7 @@ func TestStraceParse1(t *testing.T) {
 
 	// Parse, and check that they went away and that the count is right
 	parsed := make([]string, 0, len(straceout))
-	for l := range StraceParse1(straceout_iterate()) {
+	for l := range StraceParse1(straceoutIterate()) {
 		if strings.Contains(l, "resumed") || strings.Contains(l, "finished") {
 			t.Error("found invalid string in parsed results: " + l)
 		}
@@ -113,7 +113,7 @@ func TestStraceParse2Basic(t *testing.T) {
 		}
 	}
 	syscalls := map[string]int{}
-	for info := range StraceParse2(StraceParse1(straceout_iterate())) {
+	for info := range StraceParse2(StraceParse1(straceoutIterate())) {
 		syscalls[info.syscall]++
 	}
 	if nopen != syscalls["open"] {
@@ -140,7 +140,7 @@ func TestStraceParse2Args(t *testing.T) {
 		{`"as, df\""`, []string{`"as, df\""`}},
 	}
 	for _, tst := range tests {
-		a := StraceParse2_argsplit(tst.str)
+		a := StraceParse2Argsplit(tst.str)
 		if !reflect.DeepEqual(a, tst.ans) {
 			t.Error(a, "!=", tst.ans)
 		}
@@ -215,24 +215,24 @@ func TestStraceParse3(t *testing.T) {
 
 // Test real applications:
 
-// strace_r_base has the base read files for the OS where the tests are run.
-var strace_r_base map[string]bool
+// straceRbase has the base read files for the OS where the tests are run.
+var straceRbase map[string]bool
 
 // empty is an empty map
 var empty = map[string]bool{}
 
-// filetrace_test is the primitive test function that runs the provided command
+// filetraceTest is the primitive test function that runs the provided command
 // and checks if the set of files read and written match the ones provided.
-func filetrace_test(t *testing.T, cmd string, rok map[string]bool, wok map[string]bool) {
+func filetraceTest(t *testing.T, cmd string, rok map[string]bool, wok map[string]bool) {
 	rt, wt := FileTrace(cmd, nil, "")
-	if len(strace_r_base) == 0 {
-		strace_r_base, _ = FileTrace("", nil, "")
+	if len(straceRbase) == 0 {
+		straceRbase, _ = FileTrace("", nil, "")
 	}
 	rtst := map[string]bool{}
 	for r := range rok {
 		rtst[r] = true
 	}
-	for r := range strace_r_base {
+	for r := range straceRbase {
 		rtst[r] = true
 	}
 	if !reflect.DeepEqual(rtst, rtst) {
@@ -247,7 +247,7 @@ func filetrace_test(t *testing.T, cmd string, rok map[string]bool, wok map[strin
 // output redirected to a file, and a cat that reads that file.
 func TestA_echocat(t *testing.T) {
 	empty := map[string]bool{}
-	filetrace_test(t,
+	filetraceTest(t,
 		"echo asdf > t",
 		empty,
 		map[string]bool{"t": true})
@@ -256,7 +256,7 @@ func TestA_echocat(t *testing.T) {
 			t.Error(err)
 		}
 	}()
-	filetrace_test(t,
+	filetraceTest(t,
 		"cat t > /dev/null",
 		map[string]bool{"t": true},
 		empty)
@@ -264,7 +264,7 @@ func TestA_echocat(t *testing.T) {
 
 // TestA_dirs tests directory chaging.
 func TestA_dirs(t *testing.T) {
-	filetrace_test(t,
+	filetraceTest(t,
 		"mkdir d; cd d; echo asdf > t",
 		empty,
 		map[string]bool{"d/t": true})
