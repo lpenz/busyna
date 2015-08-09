@@ -307,13 +307,11 @@ func FileTrace(command string, env []string, dir string) (map[string]bool, map[s
 	/* Failsafe: remove references to files that are no longer there */
 	for f := range r {
 		if st, err := os.Stat(f); os.IsNotExist(err) || !st.Mode().IsRegular() {
-			fmt.Println("r", f)
 			delete(r, f)
 		}
 	}
 	for f := range w {
 		if st, err := os.Stat(f); os.IsNotExist(err) || !st.Mode().IsRegular() {
-			fmt.Println("w", f)
 			delete(w, f)
 		}
 	}
