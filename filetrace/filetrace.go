@@ -4,6 +4,7 @@ package filetrace
 import (
 	"bufio"
 	"fmt"
+	"github.com/lpenz/busyna/misc"
 	"io/ioutil"
 	"log"
 	"os"
@@ -14,33 +15,6 @@ import (
 	"strconv"
 	"strings"
 )
-
-// Misc: #####################################################################
-
-// tmpend finishes a temporary file by closing its file descriptor and deleting
-// it in the filesystem.
-func tmpend(f *os.File) {
-	if f == nil {
-		return
-	}
-	if err := f.Close(); err != nil {
-		log.Fatal(err)
-	}
-	if err := os.Remove(f.Name()); err != nil {
-		log.Fatal(err)
-	}
-	f = nil
-}
-
-func reFindMap(re *regexp.Regexp, l string) map[string]string {
-	m := re.FindAllStringSubmatch(l, -1)[0]
-	names := re.SubexpNames()
-	r := make(map[string]string)
-	for i := 0; i < len(names); i++ {
-		r[names[i]] = m[i]
-	}
-	return r
-}
 
 // strace runner: ############################################################
 
@@ -55,7 +29,7 @@ func StraceRun(command string, env []string, dir string) <-chan string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer tmpend(straceout)
+	defer misc.Tmpend(straceout)
 
 	a := []string{
 		"strace",
@@ -133,7 +107,7 @@ func straceparse1Line(state *straceparse1State, line string) <-chan string {
 			if !straceparse1Endre.MatchString(line) {
 				state.mid = append(state.mid, line)
 			} else {
-				m := reFindMap(straceparse1Endre, line)
+				m := misc.ReFindMap(straceparse1Endre, line)
 				c <- state.start + m["body"]
 				mid := state.mid
 				state.wait = false
@@ -148,7 +122,7 @@ func straceparse1Line(state *straceparse1State, line string) <-chan string {
 		} else {
 			switch {
 			case straceparse1Inire.MatchString(line):
-				m := reFindMap(straceparse1Inire, line)
+				m := misc.ReFindMap(straceparse1Inire, line)
 				state.start = m["pid"] + m["ini"]
 				state.wait = true
 			case straceparse1Usere.MatchString(line):
@@ -228,7 +202,7 @@ func StraceParse2(c <-chan string) <-chan Strace2Info {
 			if !strace2Re.MatchString(l) {
 				continue
 			}
-			m := reFindMap(strace2Re, l)
+			m := misc.ReFindMap(strace2Re, l)
 			pid, err := strconv.Atoi(m["pid"])
 			if err != nil {
 				log.Fatalf("could not convert \"%s\" to pid (%s)", m["pid"], err.Error())
