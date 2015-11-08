@@ -14,5 +14,5 @@ before_install:
   - if ! go get code.google.com/p/go.tools/cmd/cover; then go get golang.org/x/tools/cmd/cover; fi
   - git clone https://gist.github.com/0f22736320abe6be71ce.git $HOME/goclean
 script:
-  - $HOME/goclean/goclean.sh
+  - ./goclean.sh
   - $HOME/gopath/bin/goveralls -coverprofile=profile.cov -service=travis-ci
