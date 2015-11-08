@@ -1,9 +1,10 @@
 package busynarc
 
 import (
-	"github.com/lpenz/busyna/misc"
 	"reflect"
 	"testing"
+
+	"github.com/lpenz/busyna/misc"
 )
 
 // TestBusynarc1 tests some basic parser properties

@@ -4,7 +4,6 @@ package filetrace
 import (
 	"bufio"
 	"fmt"
-	"github.com/lpenz/busyna/misc"
 	"io/ioutil"
 	"log"
 	"os"
@@ -14,6 +13,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/lpenz/busyna/misc"
 )
 
 // strace runner: ############################################################

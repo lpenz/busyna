@@ -2,8 +2,9 @@
 package busynarc
 
 import (
-	"github.com/lpenz/busyna/misc"
 	"regexp"
+
+	"github.com/lpenz/busyna/misc"
 )
 
 // A single shell command and the environment where it should be executed.
