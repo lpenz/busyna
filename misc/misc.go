@@ -2,6 +2,7 @@
 package misc
 
 import (
+	"bufio"
 	"log"
 	"os"
 	"regexp"
@@ -31,4 +32,37 @@ func ReFindMap(re *regexp.Regexp, l string) map[string]string {
 		r[names[i]] = m[i]
 	}
 	return r
+}
+
+// Returns a channel that receives the file, line-by-line
+func ChanFromFile(filename string) <-chan string {
+	fd, err := os.Open(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+	c := make(chan string)
+	go func() {
+		defer close(c)
+		defer fd.Close()
+		scanner := bufio.NewScanner(fd)
+		for scanner.Scan() {
+			c <- scanner.Text()
+		}
+		if err := scanner.Err(); err != nil {
+			log.Fatal(err)
+		}
+	}()
+	return c
+}
+
+// Returns a channel that receives the elements of the list
+func ChanFromList(list []string) <-chan string {
+	c := make(chan string)
+	go func() {
+		defer close(c)
+		for _, l := range list {
+			c <- l
+		}
+	}()
+	return c
 }
