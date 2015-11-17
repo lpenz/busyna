@@ -31,7 +31,7 @@ func StraceRun(command string, env map[string]string, dir string) <-chan string 
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer Tmpend(straceout)
+	defer TmpEnd(straceout)
 
 	// env2 will have the environment as expected by exec.Cmd
 	var env2 []string

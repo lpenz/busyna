@@ -53,7 +53,7 @@ func parseLine(state *parseState, line string) <-chan Cmd {
 }
 
 // Parse a busynarc by channel.
-func Parse(c <-chan string) <-chan Cmd {
+func RcParse(c <-chan string) <-chan Cmd {
 	rChan := make(chan Cmd)
 	go func() {
 		defer close(rChan)
@@ -68,6 +68,29 @@ func Parse(c <-chan string) <-chan Cmd {
 }
 
 // Parse a busynarc file.
-func ParseFile(rcfilename string) <-chan Cmd {
-	return Parse(ChanFromFile(rcfilename))
+func RcParseFile(rcfilename string) <-chan Cmd {
+	return RcParse(ChanFromFile(rcfilename))
+}
+
+// runner: ###################################################################
+
+// Run the provided command, and output the dependencies and targets to the
+// provided channel.
+func rcRun1(cmd Cmd, o chan<- CmdData) {
+	deps, targets := FileTrace(cmd.Line, cmd.Env, cmd.Dir)
+	cmddata := CmdData{cmd, deps, targets}
+	o <- cmddata
+}
+
+// Run all commands in channel, outputing the dependencies and targets to the
+// second argument.
+func RcRun(c <-chan Cmd) <-chan CmdData {
+	rvChan := make(chan CmdData)
+	go func() {
+		defer close(rvChan)
+		for l := range c {
+			rcRun1(l, rvChan)
+		}
+	}()
+	return rvChan
 }

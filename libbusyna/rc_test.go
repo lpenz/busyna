@@ -34,7 +34,7 @@ func TestBusynarcParser(t *testing.T) {
 		Cmd{`_asdf`, map[string]string{`tst`: ``}, ``},
 	}
 	cmds := []Cmd{}
-	for c := range Parse(ChanFromList(busynarc)) {
+	for c := range RcParse(ChanFromList(busynarc)) {
 		cmds = append(cmds, c)
 	}
 	if len(ans) != len(cmds) {
@@ -76,7 +76,7 @@ func TestBusynarcRun(t *testing.T) {
 			t.Error(err)
 		}
 	}()
-	for cmddata := range Run(Parse(ChanFromList(busynarc))) {
+	for cmddata := range RcRun(RcParse(ChanFromList(busynarc))) {
 		cmddatas = append(cmddatas, cmddata)
 	}
 	if len(ans) != len(cmddatas) {

@@ -8,9 +8,9 @@ import (
 	"regexp"
 )
 
-// Tmpend finishes a temporary file by closing its file descriptor and deleting
+// TmpEnd finishes a temporary file by closing its file descriptor and deleting
 // it in the filesystem.
-func Tmpend(f *os.File) {
+func TmpEnd(f *os.File) {
 	if f == nil {
 		return
 	}
