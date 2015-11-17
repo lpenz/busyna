@@ -233,9 +233,9 @@ func filetraceTest(t *testing.T, cmd string, rok map[string]bool, wok map[string
 	}
 }
 
-// TestA_echocat is the base test of read/write that runs an echo with the
+// TestFiletraceEchocat is the base test of read/write that runs an echo with the
 // output redirected to a file, and a cat that reads that file.
-func TestA_echocat(t *testing.T) {
+func TestFiletraceEchocat(t *testing.T) {
 	empty := map[string]bool{}
 	filetraceTest(t,
 		"echo asdf > t",
@@ -252,8 +252,8 @@ func TestA_echocat(t *testing.T) {
 		empty)
 }
 
-// TestA_dirs tests directory chaging.
-func TestA_dirs(t *testing.T) {
+// TestFiletraceDirs tests directory chaging.
+func TestFiletraceDirs(t *testing.T) {
 	filetraceTest(t,
 		"mkdir d; cd d; echo asdf > t",
 		empty,
@@ -268,8 +268,8 @@ func TestA_dirs(t *testing.T) {
 	}()
 }
 
-// TestEnv tests the environment argument.
-func TestEnv(t *testing.T) {
+// TestFiletraceEnv tests the environment argument.
+func TestFiletraceEnv(t *testing.T) {
 	FileTrace("env > e.txt", map[string]string{"x": "y"}, "")
 	defer func() {
 		if err := os.Remove("e.txt"); err != nil {

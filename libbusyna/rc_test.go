@@ -10,8 +10,8 @@ import (
 var env0 = map[string]string{}
 var fileset0 = map[string]bool{}
 
-// TestBusynarcParser tests some basic parser properties
-func TestBusynarcParser(t *testing.T) {
+// TestRcParser tests some basic parser properties
+func TestRcParser(t *testing.T) {
 	busynarc := []string{
 		`# asdf`,
 		`#zxcv`,
@@ -47,8 +47,8 @@ func TestBusynarcParser(t *testing.T) {
 	}
 }
 
-// TestBusynarcRun tests the run function with a dummy backend.
-func TestBusynarcRun(t *testing.T) {
+// TestRcRun tests the run function with a dummy backend.
+func TestRcRun(t *testing.T) {
 	busynarc := []string{
 		`# create a file`,
 		`echo asdf > file1.txt`,
