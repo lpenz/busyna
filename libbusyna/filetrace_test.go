@@ -1,4 +1,5 @@
-package filetrace
+// filetrace test
+package libbusyna
 
 import (
 	"io/ioutil"
@@ -7,8 +8,6 @@ import (
 	"regexp"
 	"strings"
 	"testing"
-
-	"github.com/lpenz/busyna/misc"
 )
 
 // TestStraceRun tests basic strace execution.
@@ -81,7 +80,7 @@ func TestStraceParse1(t *testing.T) {
 
 	// Parse, and check that they went away and that the count is right
 	parsed := make([]string, 0, len(straceout))
-	for l := range StraceParse1(misc.ChanFromList(straceout)) {
+	for l := range StraceParse1(ChanFromList(straceout)) {
 		if strings.Contains(l, "resumed") || strings.Contains(l, "finished") {
 			t.Error("found invalid string in parsed results: " + l)
 		}
@@ -105,7 +104,7 @@ func TestStraceParse2Basic(t *testing.T) {
 		}
 	}
 	syscalls := map[string]int{}
-	for info := range StraceParse2(StraceParse1(misc.ChanFromList(straceout))) {
+	for info := range StraceParse2(StraceParse1(ChanFromList(straceout))) {
 		syscalls[info.syscall]++
 	}
 	if nopen != syscalls["open"] {

@@ -1,11 +1,10 @@
-package busynarc
+// Test rc functions
+package libbusyna
 
 import (
 	"os"
 	"reflect"
 	"testing"
-
-	"github.com/lpenz/busyna/misc"
 )
 
 var env0 = map[string]string{}
@@ -35,7 +34,7 @@ func TestBusynarcParser(t *testing.T) {
 		Cmd{`_asdf`, map[string]string{`tst`: ``}, ``},
 	}
 	cmds := []Cmd{}
-	for c := range Parse(misc.ChanFromList(busynarc)) {
+	for c := range Parse(ChanFromList(busynarc)) {
 		cmds = append(cmds, c)
 	}
 	if len(ans) != len(cmds) {
@@ -77,7 +76,7 @@ func TestBusynarcRun(t *testing.T) {
 			t.Error(err)
 		}
 	}()
-	for cmddata := range Run(Parse(misc.ChanFromList(busynarc))) {
+	for cmddata := range Run(Parse(ChanFromList(busynarc))) {
 		cmddatas = append(cmddatas, cmddata)
 	}
 	if len(ans) != len(cmddatas) {

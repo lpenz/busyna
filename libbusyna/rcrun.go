@@ -1,15 +1,12 @@
-package busynarc
-
-import (
-	"github.com/lpenz/busyna/filetrace"
-)
+// Runner of busyna.rc files
+package libbusyna
 
 // runner: ###################################################################
 
 // Run the provided command, and output the dependencies and targets to the
 // provided channel.
 func Run1(cmd Cmd, o chan<- CmdData) {
-	deps, targets := filetrace.FileTrace(cmd.Line, cmd.Env, cmd.Dir)
+	deps, targets := FileTrace(cmd.Line, cmd.Env, cmd.Dir)
 	cmddata := CmdData{cmd, deps, targets}
 	o <- cmddata
 }

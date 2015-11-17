@@ -1,5 +1,5 @@
-// Package misc has useful generic functions
-package misc
+// misc has useful generic functions
+package libbusyna
 
 import (
 	"bufio"

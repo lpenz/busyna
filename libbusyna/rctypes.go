@@ -1,5 +1,5 @@
-// Package busynarc deals with busynarc files
-package busynarc
+// Types related to busyna.rc files
+package libbusyna
 
 // A single shell command and the environment where it should be executed.
 // It is a stripped-down os/exec Cmd structure

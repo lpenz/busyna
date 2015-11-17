@@ -1,9 +1,8 @@
-package busynarc
+// Parser for busyna.rc files
+package libbusyna
 
 import (
 	"regexp"
-
-	"github.com/lpenz/busyna/misc"
 )
 
 // parser: ###################################################################
@@ -28,13 +27,13 @@ func parseLine(state *parseState, line string) <-chan Cmd {
 		defer close(rChan)
 		switch {
 		case parseChdirRe.MatchString(line):
-			m := misc.ReFindMap(parseChdirRe, line)
+			m := ReFindMap(parseChdirRe, line)
 			state.dir = m["dir"]
 		case parseEnvRe.MatchString(line):
-			m := misc.ReFindMap(parseEnvRe, line)
+			m := ReFindMap(parseEnvRe, line)
 			state.env[m["key"]] = m["val"]
 		case parseUnenvRe.MatchString(line):
-			m := misc.ReFindMap(parseUnenvRe, line)
+			m := ReFindMap(parseUnenvRe, line)
 			state.env[m["key"]] = m["val"]
 		case parseEmptyRe.MatchString(line):
 			// skip empty lines
@@ -70,5 +69,5 @@ func Parse(c <-chan string) <-chan Cmd {
 
 // Parse a busynarc file.
 func ParseFile(rcfilename string) <-chan Cmd {
-	return Parse(misc.ChanFromFile(rcfilename))
+	return Parse(ChanFromFile(rcfilename))
 }

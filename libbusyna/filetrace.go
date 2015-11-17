@@ -1,5 +1,5 @@
-// Package filetrace runs a command and traces the files read and written.
-package filetrace
+// Functions that run commands and traces the files read and written.
+package libbusyna
 
 import (
 	"fmt"
@@ -12,8 +12,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-
-	"github.com/lpenz/busyna/misc"
 )
 
 // strace runner: ############################################################
@@ -33,7 +31,7 @@ func StraceRun(command string, env map[string]string, dir string) <-chan string 
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer misc.Tmpend(straceout)
+	defer Tmpend(straceout)
 
 	// env2 will have the environment as expected by exec.Cmd
 	var env2 []string
@@ -77,7 +75,7 @@ func StraceRun(command string, env map[string]string, dir string) <-chan string 
 
 	// Re-open the tmp strace output file to pass the second fd to the closure.
 	// The first is closed by defer.
-	return misc.ChanFromFile(straceout.Name())
+	return ChanFromFile(straceout.Name())
 }
 
 // strace level 1 parser: ####################################################
@@ -107,7 +105,7 @@ func straceparse1Line(state *straceparse1State, line string) <-chan string {
 			if !straceparse1Endre.MatchString(line) {
 				state.mid = append(state.mid, line)
 			} else {
-				m := misc.ReFindMap(straceparse1Endre, line)
+				m := ReFindMap(straceparse1Endre, line)
 				c <- state.start + m["body"]
 				mid := state.mid
 				state.wait = false
@@ -122,7 +120,7 @@ func straceparse1Line(state *straceparse1State, line string) <-chan string {
 		} else {
 			switch {
 			case straceparse1Inire.MatchString(line):
-				m := misc.ReFindMap(straceparse1Inire, line)
+				m := ReFindMap(straceparse1Inire, line)
 				state.start = m["pid"] + m["ini"]
 				state.wait = true
 			case straceparse1Usere.MatchString(line):
@@ -206,7 +204,7 @@ func StraceParse2(strace1Chan <-chan string) <-chan Strace2Info {
 			if !strace2Re.MatchString(l) {
 				continue
 			}
-			m := misc.ReFindMap(strace2Re, l)
+			m := ReFindMap(strace2Re, l)
 			pid, err := strconv.Atoi(m["pid"])
 			if err != nil {
 				log.Fatalf("could not convert \"%s\" to pid (%s)", m["pid"], err.Error())
