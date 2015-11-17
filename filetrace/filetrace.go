@@ -22,7 +22,7 @@ import (
 // StraceRun runs a command using strace and writes the trace information to
 // the returned channel.
 // The environment variables and working directory can be specified.
-func StraceRun(command string, env []string, dir string) <-chan string {
+func StraceRun(command string, env map[string]string, dir string) <-chan string {
 	cmdfile, err := ioutil.TempFile("", "busyna-strace-cmdfile-")
 	cmdfile.WriteString(command)
 	cmdfile.WriteString(fmt.Sprint("\n\n\nrm -f ", cmdfile.Name(), "\n"))
@@ -48,13 +48,22 @@ func StraceRun(command string, env []string, dir string) <-chan string {
 		log.Fatal(err)
 	}
 
+	var env2 []string
+	if env == nil {
+		env2 = nil
+	} else {
+		for k, v := range env {
+			env2 = append(env2, fmt.Sprint(k, "=", v))
+		}
+	}
+
 	cmd := exec.Cmd{
 		Path:   p,
 		Args:   a,
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 		Dir:    dir,
-		Env:    env,
+		Env:    env2,
 	}
 
 	if err = cmd.Run(); err != nil {
@@ -277,7 +286,7 @@ func StraceParse3(c <-chan Strace2Info) (map[string]bool, map[string]bool) {
 
 // FileTrace runs the given command and return two channels: the first with the
 // files read and the second with the files written.
-func FileTrace(command string, env []string, dir string) (map[string]bool, map[string]bool) {
+func FileTrace(command string, env map[string]string, dir string) (map[string]bool, map[string]bool) {
 	r, w := StraceParse3(StraceParse2(StraceParse1(StraceRun(command, env, dir))))
 	/* Failsafe: remove references to files that are no longer there */
 	for f := range r {

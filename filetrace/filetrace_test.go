@@ -1,6 +1,7 @@
 package filetrace
 
 import (
+	"io/ioutil"
 	"os"
 	"reflect"
 	"regexp"
@@ -276,4 +277,23 @@ func TestA_dirs(t *testing.T) {
 			t.Error(err)
 		}
 	}()
+}
+
+// TestEnv tests the environment argument.
+func TestEnv(t *testing.T) {
+	FileTrace("env > e.txt", map[string]string{"x": "y"}, "")
+	defer func() {
+		if err := os.Remove("e.txt"); err != nil {
+			t.Error(err)
+		}
+	}()
+
+	data, err := ioutil.ReadFile("e.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	datastr := string(data)
+	if !strings.Contains(datastr, "x=y") {
+		t.Fatalf("environment x=y not found in %s", datastr)
+	}
 }
