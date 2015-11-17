@@ -2,7 +2,6 @@
 package filetrace
 
 import (
-	"bufio"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -22,16 +21,31 @@ import (
 // StraceRun runs a command using strace and writes the trace information to
 // the returned channel.
 // The environment variables and working directory can be specified.
+// Returns a channel that receives the strace output, line-by-line.
 func StraceRun(command string, env map[string]string, dir string) <-chan string {
+	// Create a tmp file with the command, that removes itself at the end.
 	cmdfile, err := ioutil.TempFile("", "busyna-strace-cmdfile-")
 	cmdfile.WriteString(command)
 	cmdfile.WriteString(fmt.Sprint("\n\n\nrm -f ", cmdfile.Name(), "\n"))
+
+	// Create a tmp file for strace output.
 	straceout, err := ioutil.TempFile("", "busyna-strace-output-")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer misc.Tmpend(straceout)
 
+	// env2 will have the environment as expected by exec.Cmd
+	var env2 []string
+	if env == nil {
+		env2 = nil
+	} else {
+		for k, v := range env {
+			env2 = append(env2, fmt.Sprint(k, "=", v))
+		}
+	}
+
+	// Build strace command-line and call it
 	a := []string{
 		"strace",
 		"-f",
@@ -48,15 +62,6 @@ func StraceRun(command string, env map[string]string, dir string) <-chan string 
 		log.Fatal(err)
 	}
 
-	var env2 []string
-	if env == nil {
-		env2 = nil
-	} else {
-		for k, v := range env {
-			env2 = append(env2, fmt.Sprint(k, "=", v))
-		}
-	}
-
 	cmd := exec.Cmd{
 		Path:   p,
 		Args:   a,
@@ -70,25 +75,9 @@ func StraceRun(command string, env map[string]string, dir string) <-chan string 
 		log.Fatal(err)
 	}
 
-	// Re-open the file to pass the second fd to the closure.
+	// Re-open the tmp strace output file to pass the second fd to the closure.
 	// The first is closed by defer.
-	fd, err := os.Open(straceout.Name())
-	if err != nil {
-		log.Fatal(err)
-	}
-	c := make(chan string)
-	go func() {
-		defer fd.Close()
-		defer close(c)
-		scanner := bufio.NewScanner(fd)
-		for scanner.Scan() {
-			c <- scanner.Text()
-		}
-		if err := scanner.Err(); err != nil {
-			log.Fatal(err)
-		}
-	}()
-	return c
+	return misc.ChanFromFile(straceout.Name())
 }
 
 // strace level 1 parser: ####################################################
@@ -106,6 +95,7 @@ type straceparse1State struct {
 }
 
 // Parse a single line of strace; can render multiple lines from state.
+// Returns a channel that receives the joined lines (see StraceParse1).
 func straceparse1Line(state *straceparse1State, line string) <-chan string {
 	if !straceparse1Basre.MatchString(line) {
 		log.Fatal("strace1: could not match strace base in " + line)
@@ -149,18 +139,20 @@ func straceparse1Line(state *straceparse1State, line string) <-chan string {
 }
 
 // StraceParse1 is the parser that joins unfinished lines in proper order.
-func StraceParse1(c <-chan string) <-chan string {
-	d := make(chan string)
+// Takes a channel that outputs strace lines, as returned by StraceRun.
+// Returns a channel that receives the joined lines.
+func StraceParse1(straceChan <-chan string) <-chan string {
+	rChan := make(chan string)
 	go func() {
-		defer close(d)
+		defer close(rChan)
 		state := straceparse1State{false, []string{}, ""}
-		for l := range c {
+		for l := range straceChan {
 			for l2 := range straceparse1Line(&state, l) {
-				d <- l2
+				rChan <- l2
 			}
 		}
 	}()
-	return d
+	return rChan
 }
 
 // strace level 2 parser: ####################################################
@@ -178,12 +170,12 @@ type Strace2Info struct {
 }
 
 // StraceParse2Argsplit splits strace function arguments into a list.
-func StraceParse2Argsplit(s string) []string {
+func StraceParse2Argsplit(straceArgs string) []string {
 	args := []string{}
 	arg := []string{}
 	seps := map[string]string{`"`: `"`, "{": "}", "[": "]"}
 	inside := ""
-	for _, a0 := range s {
+	for _, a0 := range straceArgs {
 		a := string(a0)
 		arg = append(arg, a)
 		l := len(arg)
@@ -203,12 +195,14 @@ func StraceParse2Argsplit(s string) []string {
 	return args
 }
 
-// StraceParse2 is the parser that interprets complete lines and returns the structured information.
-func StraceParse2(c <-chan string) <-chan Strace2Info {
-	d := make(chan Strace2Info)
+// StraceParse2 is the parser that interprets complete lines and returns the
+// structured information.
+// Takes a channel that outputs strace joined lines, as returned by StraceParser1.
+func StraceParse2(strace1Chan <-chan string) <-chan Strace2Info {
+	rChan := make(chan Strace2Info)
 	go func() {
-		defer close(d)
-		for l := range c {
+		defer close(rChan)
+		for l := range strace1Chan {
 			if !strace2Re.MatchString(l) {
 				continue
 			}
@@ -232,17 +226,18 @@ func StraceParse2(c <-chan string) <-chan Strace2Info {
 				result:  result,
 				args:    StraceParse2Argsplit(m["body"]),
 			}
-			d <- info
+			rChan <- info
 		}
 	}()
-	return d
+	return rChan
 }
 
 // strace level 3 parser: ####################################################
 
 // StraceParse3 uses the structured strace output to generate the
 // files read/written information.
-func StraceParse3(c <-chan Strace2Info) (map[string]bool, map[string]bool) {
+// Returns read files, written files.
+func StraceParse3(siChan <-chan Strace2Info) (map[string]bool, map[string]bool) {
 	r := make(map[string]bool)
 	w := make(map[string]bool)
 	wd, err := os.Getwd()
@@ -250,7 +245,7 @@ func StraceParse3(c <-chan Strace2Info) (map[string]bool, map[string]bool) {
 		log.Fatal(err)
 	}
 	dir := wd
-	for i := range c {
+	for i := range siChan {
 		if i.result < 0 {
 			continue
 		}

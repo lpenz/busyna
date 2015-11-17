@@ -7,13 +7,16 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/lpenz/busyna/misc"
 )
 
-// TestStraceRun tests basic strace execution
+// TestStraceRun tests basic strace execution.
 func TestStraceRun(t *testing.T) {
 	StraceRun("echo asdf > /dev/null", nil, "")
 }
 
+// Example strace file used to test parsers.
 var straceout = []string{
 	`16819 stat64("/usr/bin/unbuffer", {st_mode=S_IFREG|0755, st_size=640, ...}) = 0`,
 	`16819 stat64("/usr/bin/unbuffer", {st_mode=S_IFREG|0755, st_size=640, ...}) = 0`,
@@ -53,18 +56,6 @@ var straceout = []string{
 	`16820 exit_group(0)                     = ?`,
 }
 
-// straceoutIterate writes straceout to a channel, one line at a time.
-func straceoutIterate() <-chan string {
-	c := make(chan string)
-	go func() {
-		defer close(c)
-		for _, l := range straceout {
-			c <- l
-		}
-	}()
-	return c
-}
-
 // TestStraceParse1 tests strace level1 parser (joining) by counting and
 // checking strings.
 func TestStraceParse1(t *testing.T) {
@@ -90,7 +81,7 @@ func TestStraceParse1(t *testing.T) {
 
 	// Parse, and check that they went away and that the count is right
 	parsed := make([]string, 0, len(straceout))
-	for l := range StraceParse1(straceoutIterate()) {
+	for l := range StraceParse1(misc.ChanFromList(straceout)) {
 		if strings.Contains(l, "resumed") || strings.Contains(l, "finished") {
 			t.Error("found invalid string in parsed results: " + l)
 		}
@@ -114,7 +105,7 @@ func TestStraceParse2Basic(t *testing.T) {
 		}
 	}
 	syscalls := map[string]int{}
-	for info := range StraceParse2(StraceParse1(straceoutIterate())) {
+	for info := range StraceParse2(StraceParse1(misc.ChanFromList(straceout))) {
 		syscalls[info.syscall]++
 	}
 	if nopen != syscalls["open"] {
@@ -195,7 +186,6 @@ func TestStraceParse3(t *testing.T) {
 		c <- `16821 open("w", O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC) = 4`
 		c <- `16821 open("r", O_RDONLY|O_CLOEXEC) = 5`
 		c <- `16821 creat("c", 01)                          = 6`
-
 	}()
 	r, w := StraceParse3(StraceParse2(c))
 	rok := map[string]bool{

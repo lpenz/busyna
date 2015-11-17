@@ -23,7 +23,7 @@ func Tmpend(f *os.File) {
 	f = nil
 }
 
-// ReFindMap returns a map with the matched substrings of a regexp
+// ReFindMap returns a map with the matched substrings of a regexp.
 func ReFindMap(re *regexp.Regexp, l string) map[string]string {
 	m := re.FindAllStringSubmatch(l, -1)[0]
 	names := re.SubexpNames()
@@ -34,7 +34,8 @@ func ReFindMap(re *regexp.Regexp, l string) map[string]string {
 	return r
 }
 
-// Returns a channel that receives the file, line-by-line
+// ChanFromFile returns a channel that receives the provided file,
+// line-by-line.
 func ChanFromFile(filename string) <-chan string {
 	fd, err := os.Open(filename)
 	if err != nil {
@@ -55,7 +56,7 @@ func ChanFromFile(filename string) <-chan string {
 	return c
 }
 
-// Returns a channel that receives the elements of the list
+// ChanFromList returns a channel that receives the elements of the list.
 func ChanFromList(list []string) <-chan string {
 	c := make(chan string)
 	go func() {
