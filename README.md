@@ -16,7 +16,7 @@ busyna.db
    |
    | deploy: create the build file for the target build system
    v
-Makefile/SConstruct/etc.
+Makefile/graphviz/SConstruct/etc.
 ```
 
 
@@ -48,9 +48,4 @@ check if the dependencies of an existing *Makefile* are complete.
 The important thing is: your are not alone maintaining the dependencies
 anymore - you can just let the computer do that for you.
 
-
-## Other tools
-
-- *busyna-dot*: creates a graphviz representation of the dependencies and
-  targets present in a `busyna.db` file.
 

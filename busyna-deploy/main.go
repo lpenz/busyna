@@ -22,10 +22,12 @@ func main() {
 	}
 	format := flag.Arg(0)
 	db := flag.Arg(1)
-	dot := flag.Arg(2)
+	output := flag.Arg(2)
 	switch format {
 	case "dot":
-		libbusyna.DeployDot(libbusyna.DbRead(db), dot)
+		libbusyna.DeployDot(libbusyna.DbRead(db), output)
+	case "make":
+		libbusyna.DeployMake(libbusyna.DbRead(db), output)
 	default:
 		usage()
 		os.Exit(1)
