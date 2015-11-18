@@ -247,9 +247,23 @@ func TestFiletraceEchocat(t *testing.T) {
 		}
 	}()
 	filetraceTest(t,
-		"cat t > /dev/null",
+		"cat t > h",
 		map[string]bool{"t": true},
-		empty)
+		map[string]bool{"h": true})
+	defer func() {
+		if err := os.Remove("h"); err != nil {
+			t.Error(err)
+		}
+	}()
+	filetraceTest(t,
+		"cp t j",
+		map[string]bool{"t": true},
+		map[string]bool{"j": true})
+	defer func() {
+		if err := os.Remove("j"); err != nil {
+			t.Error(err)
+		}
+	}()
 }
 
 // TestFiletraceDirs tests directory chaging.

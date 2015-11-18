@@ -83,18 +83,8 @@ func TestRcRun(t *testing.T) {
 		t.Errorf("len mismatch: len(dat)=%d != len(ans)=%d", len(cmddatas), len(ans))
 	}
 	for i := 0; i < len(ans); i++ {
-		if !reflect.DeepEqual(cmddatas[i].Cmd, ans[i].Cmd) {
-			t.Errorf("i %d Cmd mismatch: %s != %s", i, cmddatas[i].Cmd, ans[i].Cmd)
-		}
-		for j := range ans[i].Deps {
-			if _, ok := cmddatas[i].Deps[j]; !ok {
-				t.Errorf("i %d dep %s not found", i, j)
-			}
-		}
-		for j := range ans[i].Targets {
-			if _, ok := cmddatas[i].Targets[j]; !ok {
-				t.Errorf("i %d target %s not found", i, j)
-			}
+		if !CmdDataEqual(cmddatas[i], ans[i], false) {
+			t.Errorf("i %d Cmd mismatch: %v != %v", i, cmddatas[i], ans[i])
 		}
 	}
 }
