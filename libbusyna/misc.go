@@ -1,4 +1,3 @@
-// misc has useful generic functions
 package libbusyna
 
 import (

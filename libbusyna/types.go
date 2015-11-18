@@ -1,4 +1,3 @@
-// Types related to busyna.rc files
 package libbusyna
 
 import (

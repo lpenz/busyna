@@ -1,4 +1,3 @@
-// filetrace test
 package libbusyna
 
 import (

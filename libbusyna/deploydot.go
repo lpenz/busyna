@@ -1,12 +1,9 @@
-// deploy dot functions
 package libbusyna
 
 import (
 	"fmt"
 	"log"
 	"os"
-
-	_ "github.com/mattn/go-sqlite3"
 )
 
 // Create a dot graphviz file with db data read form the provided channel.

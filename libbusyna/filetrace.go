@@ -1,4 +1,3 @@
-// Functions that run commands and traces the files read and written.
 package libbusyna
 
 import (

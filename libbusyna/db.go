@@ -1,4 +1,3 @@
-// DB functions
 package libbusyna
 
 import (

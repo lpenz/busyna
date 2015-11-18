@@ -1,4 +1,3 @@
-// Test rc functions
 package libbusyna
 
 import (

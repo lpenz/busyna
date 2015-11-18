@@ -1,4 +1,3 @@
-// Test db functions
 package libbusyna
 
 import (

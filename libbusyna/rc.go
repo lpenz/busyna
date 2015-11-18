@@ -1,4 +1,3 @@
-// Parser for busyna.rc files
 package libbusyna
 
 import (
