@@ -15,7 +15,7 @@ test -z "$(gofmt -l -w .     | tee /dev/stderr)"
 test -z "$(goimports -l -w . | tee /dev/stderr)"
 test -z "$(golint .          | tee /dev/stderr)"
 go vet ./...
-go test -race ./...
+go test -v -race github.com/lpenz/busyna/libbusyna
 
 # Run test coverage on each subdirectories and merge the coverage profile.
 

@@ -49,3 +49,8 @@ The important thing is: your are not alone maintaining the dependencies
 anymore - you can just let the computer do that for you.
 
 
+## Other tools
+
+- *busyna-dot*: creates a graphviz representation of the dependencies and
+  targets present in a `busyna.db` file.
+
