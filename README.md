@@ -76,3 +76,20 @@ complete and minimalist. You can use the results to:
 - bootstrap a conversion to another build system (not yet supported)
 
 
+## Roadmap
+
+- busyna-sh: enable `busyna.rc` execution with
+  [she-bang](https://en.wikipedia.org/wiki/Shebang_(Unix)).
+- Fix bugs and finish supporting the current features with correct detection
+  of environment and directories.
+- Validate the implementation by building make-based software projects - the
+  linux kernel, for instance.
+- Support further target build systems:
+  - [tup](http://gittup.org/tup/)
+  - [scons](http://www.scons.org/)
+  - [shake](http://shakebuild.com/)
+- Deal with `busyna.db` updates: perhaps a mode where the deploy command
+ crates a special build system file that interacts with busyna to trace the
+ executed commands that update the dependencies?
+
+
