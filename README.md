@@ -4,17 +4,21 @@
 
 # busyna
 
-BUild SYstems Never Alone - an alternative to crafting build system configuration by hand
+Tired of maintaining dependencies by hand on your build system? **busyna**
+starts with a simple shell-like script that, when run, traces the files used by
+each command. That information can then be used to create a correct and
+optimized build system script (Makefile/SConstruct/etc.) that you can then use
+at will.
 
-A quick summary for the impatient:
+In essence:
 ```
-busyna.rc: shell-like "script"
+busyna.rc: shell-like busyna script
    |
-   | run: trace commands, discover targets and dependencies
+   | run: execute and trace commands, discover dependencies and targets
    v
-busyna.db
+busyna.db: database with "run" information
    |
-   | deploy: create the build file for the target build system
+   | deploy: create the script for the target build system
    v
 Makefile/graphviz/SConstruct/etc.
 ```
@@ -22,20 +26,19 @@ Makefile/graphviz/SConstruct/etc.
 
 ## The busyna.rc file
 
-The `busyna.rc` file has all the commands to build something, in the order they
-should be executed. The syntax is a subset of shell - and you can even use
-bash to run it to debug.
+The `busyna.rc` file has all commands in the order they should be executed. The
+syntax is a subset of shell - and you can even debug it by using bash.
 
 But the real functionality comes when you *busyna run* it.
 
 
 ## busyna run
 
-When you *busyna run* the `busyna.rc` file, though, all operations that read or
-write to files are traced, and the files used collected
-as *dependencies* (read files) and *targets* (written files). That information
-is stored in a `busyna.db` file, that can later be used to generate
-a very precise *Makefile*.
+When you *busyna run* the `busyna.rc` file, all operations that read or write
+to files are traced, and the files used collected as *dependencies* (read
+files) and *targets* (written files). That information is stored in
+a `busyna.db` file, that can later be used to generate a very optimized and
+precise *Makefile*.
 
 
 ## busyna deploy
