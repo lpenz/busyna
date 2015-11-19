@@ -9,7 +9,7 @@ import (
 )
 
 func usage() {
-	fmt.Printf("Usage: busyna-deploy <format: dot> <input file> <output file>\n\n")
+	fmt.Printf("Usage: busyna-deploy <format: dot|make> <input file> <output file>\n\n")
 	flag.PrintDefaults()
 }
 

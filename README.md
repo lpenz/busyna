@@ -23,6 +23,20 @@ busyna.db: database with "run" information
 Makefile/graphviz/SConstruct/etc.
 ```
 
+**busyna** can also be used to optimize an existing build system or convert it
+to another by *extracting* the `busyna.rc` from the existing Makefile instead
+of writting it by hand:
+```
+Makefile: existing build infrastructure
+   |
+   |
+   v
+busyna.rc:
+   |
+   v
+  ...
+```
+
 
 ## The busyna.rc file
 
@@ -50,5 +64,15 @@ check if the dependencies of an existing *Makefile* are complete.
 
 The important thing is: your are not alone maintaining the dependencies
 anymore - you can just let the computer do that for you.
+
+
+## busyna extract
+
+Instead of writing the `busyna.rc` file, you use *busyna extract* it from an
+existing *Makefile*. The dependencies detected by busyna will usually be more
+complete and minimalist. You can use the results to:
+- generate the graphviz output to see your build system dependencies graphically
+- generate another, optimized Makefile
+- bootstrap a conversion to another build system (not yet supported)
 
 
