@@ -17,8 +17,8 @@ func TestDeployMake(t *testing.T) {
 	busynarc := []string{
 		`# create a file`,
 		`echo asdf > file1.txt`,
-		`# copy it to another`,
-		`cat file1.txt > file2.txt`,
+		`# copy it to another two files in the same command`,
+		`cat file1.txt > file2.txt; cat file1.txt > file3.txt`,
 	}
 	defer func() {
 		if err := os.Remove("test.db"); err != nil {

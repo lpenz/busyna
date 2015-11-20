@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 )
@@ -37,28 +38,18 @@ func ExtractShellCreate(outputfile string) *os.File {
 	shfile.WriteString(fmt.Sprintf("echo cd \"$PWD\" >> %s\n\n", o))
 	shfile.WriteString(fmt.Sprintf("echo \"$@\" >> %s\n\n", o))
 	shfile.WriteString("exec /bin/sh -c \"$1\"\n\n")
-	shfile.Close()
+	shfile.Close() // Must close to avoid "text file busy"
 	return shfile
 }
 
-// ExtractMake creates the shell script and the Makefile that are used to
-// create a busyna.rc from an existing Makefile
-func ExtractMake(outputfile string) (*os.File, *os.File) {
-	os.Remove(outputfile)
-
-	fd, err := os.Create(outputfile)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fd.WriteString("#!/usr/bin/env busyna-sh\n\n")
-	shfile := ExtractShellCreate(outputfile)
-	//fmt.Printf("tmp %s\n", shfile.Name())
-
+// ExtractMakefileCreate creates the helper Makefile used to extract make's
+// commands.
+func ExtractMakefileCreate(shfile *os.File) *os.File {
 	mkfile, err := ioutil.TempFile("", "busyna-makefile-")
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	mkfile.WriteString(fmt.Sprintf("SHELL:=%s\n", shfile.Name()))
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -67,5 +58,24 @@ func ExtractMake(outputfile string) (*os.File, *os.File) {
 	mkfile.WriteString(fmt.Sprintf("include %s/Makefile\n", cwd))
 	mkfile.Sync()
 
-	return mkfile, shfile
+	return mkfile
+}
+
+// ExtractMake creates the shell script and the Makefile that are used to
+// create a busyna.rc from an existing Makefile
+func ExtractMake(outputfile string) {
+	os.Remove(outputfile)
+
+	shfile := ExtractShellCreate(outputfile)
+	defer os.Remove(shfile.Name())
+
+	mkfile := ExtractMakefileCreate(shfile)
+	defer TmpEnd(mkfile)
+
+	cmd := exec.Command("make", "-B", "-f", mkfile.Name())
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		log.Fatal(err)
+	}
 }
