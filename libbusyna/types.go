@@ -10,6 +10,7 @@ type Cmd struct {
 	Line string
 	Env  map[string]string
 	Dir  string
+	Err  error
 }
 
 // A shell command with the discovered dependencies and targets.

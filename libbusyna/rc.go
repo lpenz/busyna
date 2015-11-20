@@ -1,6 +1,10 @@
 package libbusyna
 
 import (
+	"errors"
+	"fmt"
+	"log"
+	"path/filepath"
 	"regexp"
 )
 
@@ -8,8 +12,12 @@ import (
 
 // Parser internal state.
 type parseState struct {
-	env map[string]string
-	dir string
+	env      map[string]string
+	dir      string
+	prevdir  string
+	filename string
+	linenum  int
+	err      error
 }
 
 var parseEmptyRe = regexp.MustCompile(`^\s*$`)
@@ -18,33 +26,52 @@ var parseChdirRe = regexp.MustCompile(`^\s*cd\s+(?P<dir>.+)\s*$`)
 var parseEnvRe = regexp.MustCompile(`^\s*(?P<key>[a-zA-Z_][a-zA-Z0-9_]*)=(?P<val>[a-zA-Z0-9_]*)\s*$`)
 var parseUnenvRe = regexp.MustCompile(`^\s*unset\s+(?P<key>[a-zA-Z_][a-zA-Z0-9_]*)\s*$`)
 
+// envcopy copies the provided env to another map
+func envcopy(env map[string]string) map[string]string {
+	r := map[string]string{}
+	for k, v := range env {
+		r[k] = v
+	}
+	return r
+}
+
 // Parse a single line from a busynarc file.
 // Returns the channel that receives the structured result of the parsing.
 func parseLine(state *parseState, line string) <-chan Cmd {
 	rChan := make(chan Cmd)
 	go func() {
 		defer close(rChan)
+		state.linenum++
 		switch {
 		case parseChdirRe.MatchString(line):
 			m := ReFindMap(parseChdirRe, line)
-			state.dir = m["dir"]
+			prevdir := state.dir
+			switch {
+			case m["dir"] == "-":
+				state.dir = state.prevdir
+			case filepath.IsAbs(string(m["dir"][0])):
+				errstr := fmt.Sprintf("%s:%d: busyna.rc should use only relative directories", state.filename, state.linenum)
+				rChan <- Cmd{line, envcopy(state.env), state.dir, errors.New(errstr)}
+				log.Println(errstr)
+				state.dir = m["dir"]
+			default:
+				state.dir = filepath.Join(state.dir, m["dir"])
+			}
+			state.prevdir = prevdir
 		case parseEnvRe.MatchString(line):
 			m := ReFindMap(parseEnvRe, line)
 			state.env[m["key"]] = m["val"]
 		case parseUnenvRe.MatchString(line):
 			m := ReFindMap(parseUnenvRe, line)
-			state.env[m["key"]] = m["val"]
+			delete(state.env, m["key"])
 		case parseEmptyRe.MatchString(line):
 			// skip empty lines
 		case parseCommentRe.MatchString(line):
 			// skip comments
 		default:
 			// command line
-			env := map[string]string{}
-			for k, v := range state.env {
-				env[k] = v
-			}
-			cmd := Cmd{line, env, state.dir}
+			cmd := Cmd{line, envcopy(state.env), state.dir, state.err}
+			state.err = nil
 			rChan <- cmd
 		}
 	}()
@@ -52,11 +79,11 @@ func parseLine(state *parseState, line string) <-chan Cmd {
 }
 
 // Parse a busynarc by channel.
-func RcParse(c <-chan string) <-chan Cmd {
+func RcParse(filename string, c <-chan string) <-chan Cmd {
 	rChan := make(chan Cmd)
 	go func() {
 		defer close(rChan)
-		state := parseState{map[string]string{}, ""}
+		state := parseState{map[string]string{}, ".", "", filename, 0, nil}
 		for l := range c {
 			for l2 := range parseLine(&state, l) {
 				rChan <- l2
@@ -68,7 +95,7 @@ func RcParse(c <-chan string) <-chan Cmd {
 
 // Parse a busynarc file.
 func RcParseFile(rcfilename string) <-chan Cmd {
-	return RcParse(ChanFromFile(rcfilename))
+	return RcParse(rcfilename, ChanFromFile(rcfilename))
 }
 
 // runner: ###################################################################

@@ -16,5 +16,5 @@ func main() {
 	}
 	rc := flag.Arg(0)
 	db := flag.Arg(1)
-	libbusyna.DbWrite(libbusyna.RcRun(libbusyna.RcParse(libbusyna.ChanFromFile(rc))), db)
+	libbusyna.DbWrite(libbusyna.RcRun(libbusyna.RcParse("", libbusyna.ChanFromFile(rc))), db)
 }

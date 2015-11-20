@@ -1,6 +1,7 @@
 package libbusyna
 
 import (
+	"errors"
 	"os"
 	"reflect"
 	"testing"
@@ -9,39 +10,74 @@ import (
 var env0 = map[string]string{}
 var fileset0 = map[string]bool{}
 
+// rctolist parses the provided busyna.rc string list into a Cmd list
+func rctolist(busynarc []string) []Cmd {
+	cmds := []Cmd{}
+	for cmddata := range RcParse("", ChanFromList(busynarc)) {
+		cmds = append(cmds, cmddata)
+	}
+	return cmds
+}
+
 // TestRcParser tests some basic parser properties
 func TestRcParser(t *testing.T) {
 	busynarc := []string{
+		// Comments:
 		`# asdf`,
 		`#zxcv`,
-		`cmd 1`,
+		// Empty line skipping:
 		``,
-		`cmd zxcv _2`,
 		` `,
-		`tst=5`,
+		"\t",
+		// Simple command, no env:
+		`echo zxcv _2 999`,
+		// Environment, and then command:
+		`e=5`,
+		`ls 1`,
+		// Remove environment, repeat command:
+		`unset e`,
+		`ls 2`,
+		// Go to a subdir, run two commands:
+		`cd sub1`,
+		`ls 3`,
+		`ls 4`,
+		// Go to a subsubdir, run a commands:
+		`cd sub11`,
+		`ls 5`,
+		// Go back to a dir that is a child from top:
+		`cd ../../sub2`,
+		`ls 6`,
+		// Go back to top:
+		`cd ..`,
+		// Go to an absolute path:
+		`cd /`,
+		`ls 7`,
+		// Go back to the previous directory
+		`cd -`,
+		`ls 8`,
+		// Some weird commands:
 		`cmd =5`,
-		`tst=8`,
-		`cmd`,
-		`tst=`,
-		`_asdf`,
 	}
 	ans := []Cmd{
-		Cmd{`cmd 1`, env0, ``},
-		Cmd{`cmd zxcv _2`, env0, ``},
-		Cmd{`cmd =5`, map[string]string{`tst`: `5`}, ``},
-		Cmd{`cmd`, map[string]string{`tst`: `8`}, ``},
-		Cmd{`_asdf`, map[string]string{`tst`: ``}, ``},
+		Cmd{`echo zxcv _2 999`, env0, `.`, nil},
+		Cmd{`ls 1`, map[string]string{`e`: `5`}, `.`, nil},
+		Cmd{`ls 2`, env0, `.`, nil},
+		Cmd{`ls 3`, env0, `sub1`, nil},
+		Cmd{`ls 4`, env0, `sub1`, nil},
+		Cmd{`ls 5`, env0, `sub1/sub11`, nil},
+		Cmd{`ls 6`, env0, `sub2`, nil},
+		Cmd{`cd /`, env0, `.`, errors.New(":19: busyna.rc should use only relative directories")},
+		Cmd{`ls 7`, env0, `/`, nil},
+		Cmd{`ls 8`, env0, `.`, nil},
+		Cmd{`cmd =5`, env0, `.`, nil},
 	}
-	cmds := []Cmd{}
-	for c := range RcParse(ChanFromList(busynarc)) {
-		cmds = append(cmds, c)
-	}
+	cmds := rctolist(busynarc)
 	if len(ans) != len(cmds) {
 		t.Errorf("len mismatch: len(%s)=%d != len(%s)=%d", cmds, len(cmds), ans, len(ans))
 	}
 	for i := 0; i < len(ans); i++ {
 		if !reflect.DeepEqual(cmds[i], ans[i]) {
-			t.Errorf("arg %d mismatch: %s != %s", i, cmds[i], ans[i])
+			t.Errorf("cmd %d mismatch: %v != %v", i, cmds[i], ans[i])
 		}
 	}
 }
@@ -56,12 +92,12 @@ func TestRcRun(t *testing.T) {
 	}
 	ans := []CmdData{
 		CmdData{
-			Cmd{`echo asdf > file1.txt`, env0, ``},
+			Cmd{`echo asdf > file1.txt`, env0, `.`, nil},
 			fileset0,
 			map[string]bool{`file1.txt`: true},
 		},
 		CmdData{
-			Cmd{`cat file1.txt > file2.txt`, env0, ``},
+			Cmd{`cat file1.txt > file2.txt`, env0, `.`, nil},
 			map[string]bool{`file1.txt`: true},
 			map[string]bool{`file2.txt`: true},
 		},
@@ -75,7 +111,7 @@ func TestRcRun(t *testing.T) {
 			t.Error(err)
 		}
 	}()
-	for cmddata := range RcRun(RcParse(ChanFromList(busynarc))) {
+	for cmddata := range RcRun(RcParse("", ChanFromList(busynarc))) {
 		cmddatas = append(cmddatas, cmddata)
 	}
 	if len(ans) != len(cmddatas) {

@@ -125,7 +125,7 @@ func DbRead(dbfilename string) <-chan CmdData {
 			if err = json.Unmarshal([]byte(envstr), &env); err != nil {
 				log.Fatal(err)
 			}
-			cmd := Cmd{line, env, dir}
+			cmd := Cmd{line, env, dir, nil}
 
 			rChan <- CmdData{
 				cmd,

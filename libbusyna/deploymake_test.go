@@ -29,7 +29,7 @@ func TestDeployMake(t *testing.T) {
 		}
 	}()
 	// Write the database:
-	DbWrite(RcRun(RcParse(ChanFromList(busynarc))), "test.db")
+	DbWrite(RcRun(RcParse("", ChanFromList(busynarc))), "test.db")
 	// Remove target files:
 	if err := os.Remove("file1.txt"); err != nil {
 		t.Error(err)

@@ -26,11 +26,11 @@ func TestDb(t *testing.T) {
 	}()
 	// Get the answer by running the busynarc above
 	ans := []CmdData{}
-	for cmddata := range RcRun(RcParse(ChanFromList(busynarc))) {
+	for cmddata := range RcRun(RcParse("", ChanFromList(busynarc))) {
 		ans = append(ans, cmddata)
 	}
 	// Write it to the database:
-	DbWrite(RcRun(RcParse(ChanFromList(busynarc))), "test.db")
+	DbWrite(RcRun(RcParse("", ChanFromList(busynarc))), "test.db")
 	cmddatas := []CmdData{}
 	for cmddata := range DbRead("test.db") {
 		cmddatas = append(cmddatas, cmddata)

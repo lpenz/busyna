@@ -32,7 +32,7 @@ func TestDeployDot(t *testing.T) {
 		}
 	}()
 	// Write the database:
-	DbWrite(RcRun(RcParse(ChanFromList(busynarc))), "test.db")
+	DbWrite(RcRun(RcParse("", ChanFromList(busynarc))), "test.db")
 	// Let's see if the dot function generates a valid file:
 	DeployDot(DbRead("test.db"), "test.dot")
 	if err := exec.Command("dot", "-Tpng", "test.dot", "-o", "test.png").Run(); err != nil {
