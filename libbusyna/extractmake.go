@@ -66,25 +66,26 @@ func ExtractMakefileCreate(shfile *os.File) *os.File {
 // ExtractMake creates the shell script and the Makefile that are used to
 // create a busyna.rc from an existing Makefile
 func ExtractMake(outputfile string) {
-	rcfile, err := ioutil.TempFile(filepath.Dir(outputfile), "busyna.rc-")
+	fd, err := ioutil.TempFile(filepath.Dir(outputfile), "busyna.rc-")
 	if err != nil {
 		log.Fatal(err)
 	}
-	rcfile.Close()
+	defer os.Remove(fd.Name())
+	fd.Close()
 
-	shfile := ExtractShellCreate(rcfile.Name())
+	shfile := ExtractShellCreate(fd.Name())
 	mkfile := ExtractMakefileCreate(shfile)
 
 	cmd := exec.Command("make", "-B", "-j1", "-f", mkfile.Name())
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		log.Fatal(fmt.Sprintf("%s while running make %s with shell %s to fill %s - keeping files", err, mkfile.Name(), shfile.Name(), rcfile.Name()))
+		log.Fatal(fmt.Sprintf("%s while running make %s with shell %s to fill %s - keeping files", err, mkfile.Name(), shfile.Name(), fd.Name()))
 	}
 	os.Remove(shfile.Name())
 	os.Remove(mkfile.Name())
 
-	if err = os.Rename(rcfile.Name(), outputfile); err != nil {
+	if err = os.Rename(fd.Name(), outputfile); err != nil {
 		log.Fatal(err)
 	}
 }

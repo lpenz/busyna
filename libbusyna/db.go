@@ -4,8 +4,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -32,14 +34,19 @@ func dbOpen(dbfilename string) *sql.DB {
 }
 
 // DbWrite dumps the CmdData that it reads from the provided channel into a sqlite database.
-func DbWrite(c <-chan CmdData, dbfilename string) {
-	os.Remove(dbfilename)
+func DbWrite(c <-chan CmdData, outputfile string) {
+	fd, err := ioutil.TempFile(filepath.Dir(outputfile), "busyna.db-")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fd.Close()
+	defer os.Remove(fd.Name())
 
 	// Connect/create database file
-	db := dbOpen(dbfilename)
+	db := dbOpen(fd.Name())
 
 	// Create tables:
-	_, err := db.Exec("CREATE TABLE IF NOT EXISTS Command ( id INTEGER PRIMARY KEY, line VARCHAR(255) NOT NULL, env VARCHAR(1023), dir VARCHAR(255) )")
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS Command ( id INTEGER PRIMARY KEY, line VARCHAR(255) NOT NULL, env VARCHAR(1023), dir VARCHAR(255) )")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -92,6 +99,10 @@ func DbWrite(c <-chan CmdData, dbfilename string) {
 		}
 	}
 	db.Close()
+
+	if err = os.Rename(fd.Name(), outputfile); err != nil {
+		log.Fatal(err)
+	}
 }
 
 // DbRead reads the database from filename and outputs the data to the returned

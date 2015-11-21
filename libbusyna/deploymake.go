@@ -2,21 +2,22 @@ package libbusyna
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 )
 
 // Create a dot graphviz file with db data read form the provided channel.
-func DeployMake(c <-chan CmdData, makefilename string) {
-	os.Remove(makefilename)
-
-	fd, err := os.Create(makefilename)
+func DeployMake(c <-chan CmdData, outputfile string) {
+	fd, err := ioutil.TempFile(filepath.Dir(outputfile), "Makefile-")
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer os.Remove(fd.Name())
 
 	// Header:
-	fd.WriteString(fmt.Sprintf("# Automatically generated from %s\n\n", makefilename))
+	fd.WriteString(fmt.Sprintf("# Automatically generated from %s\n\n", outputfile))
 	fd.WriteString(".PHONY: all clean\n\n")
 	fd.WriteString("all:\n\n")
 
@@ -55,4 +56,8 @@ func DeployMake(c <-chan CmdData, makefilename string) {
 	fd.WriteString("\n\n")
 
 	fd.Close()
+
+	if err = os.Rename(fd.Name(), outputfile); err != nil {
+		log.Fatal(err)
+	}
 }

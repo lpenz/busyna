@@ -2,18 +2,19 @@ package libbusyna
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 )
 
 // Create a dot graphviz file with db data read form the provided channel.
-func DeployDot(c <-chan CmdData, dotfilename string) {
-	os.Remove(dotfilename)
-
-	fd, err := os.Create(dotfilename)
+func DeployDot(c <-chan CmdData, outputfile string) {
+	fd, err := ioutil.TempFile(filepath.Dir(outputfile), "busyna.dot-")
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer os.Remove(fd.Name())
 
 	fd.WriteString("digraph {\n\trankdir=LR\n\n")
 	i := 0
@@ -39,4 +40,8 @@ func DeployDot(c <-chan CmdData, dotfilename string) {
 	}
 	fd.WriteString("}\n")
 	fd.Close()
+
+	if err = os.Rename(fd.Name(), outputfile); err != nil {
+		log.Fatal(err)
+	}
 }
