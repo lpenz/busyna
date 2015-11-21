@@ -57,6 +57,11 @@ func TestExtractMake(t *testing.T) {
 	os.Remove("file3.txt")
 	// Run the created test.rc with the shell.
 	// The defer's above check if the files are created.
-	exec.Command("/bin/sh", "test.rc").Run()
+	cmd := exec.Command("/bin/sh", "test.rc")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err = cmd.Run(); err != nil {
+		t.Errorf("%s while running test.rc with shell", err)
+	}
 	// That also checks busyna shell compatibility.
 }

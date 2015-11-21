@@ -79,7 +79,7 @@ complete and minimalist. You can use the results to:
 ## Roadmap
 
 - busyna-sh: enable `busyna.rc` execution with
-  [she-bang](https://en.wikipedia.org/wiki/Shebang_(Unix)).
+  [shebang](https://en.wikipedia.org/wiki/Shebang_(Unix)).
 - Fix bugs and finish supporting the current features with correct detection
   of environment and directories.
 - Validate the implementation by building make-based software projects - the

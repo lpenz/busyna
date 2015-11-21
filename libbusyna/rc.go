@@ -3,7 +3,6 @@ package libbusyna
 import (
 	"errors"
 	"fmt"
-	"log"
 	"path/filepath"
 	"regexp"
 )
@@ -50,9 +49,6 @@ func parseLine(state *parseState, line string) <-chan Cmd {
 			case m["dir"] == "-":
 				state.dir = state.prevdir
 			case filepath.IsAbs(string(m["dir"][0])):
-				errstr := fmt.Sprintf("%s:%d: busyna.rc should use only relative directories", state.filename, state.linenum)
-				rChan <- Cmd{line, envcopy(state.env), state.dir, errors.New(errstr)}
-				log.Println(errstr)
 				state.dir = m["dir"]
 			default:
 				state.dir = filepath.Join(state.dir, m["dir"])
@@ -71,8 +67,12 @@ func parseLine(state *parseState, line string) <-chan Cmd {
 		default:
 			// command line
 			cmd := Cmd{line, envcopy(state.env), state.dir, state.err}
-			state.err = nil
+			if state.err == nil && filepath.IsAbs(state.dir) {
+				errstr := fmt.Sprintf("%s:%d: busyna.rc should use only relative directories", state.filename, state.linenum)
+				cmd.Err = errors.New(errstr)
+			}
 			rChan <- cmd
+			state.err = nil
 		}
 	}()
 	return rChan

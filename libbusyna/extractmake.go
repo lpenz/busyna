@@ -36,7 +36,9 @@ func ExtractShellCreate(outputfile string) *os.File {
 	shfile.WriteString(fmt.Sprintf("/usr/bin/env >> %s\n", o))
 	shfile.WriteString(")\n")
 	shfile.WriteString(fmt.Sprintf("echo cd \"$PWD\" >> %s\n\n", o))
-	shfile.WriteString(fmt.Sprintf("echo \"$@\" >> %s\n\n", o))
+	shfile.WriteString(fmt.Sprintf("echo -n '(' >> %s\n\n", o))
+	shfile.WriteString(fmt.Sprintf("echo \"$@\" | sed 's@\\\\$@@' | tr -d '\\n' >> %s\n\n", o))
+	shfile.WriteString(fmt.Sprintf("echo ')' >> %s\n\n", o))
 	shfile.WriteString("exec /bin/sh -c \"$1\"\n\n")
 	shfile.Close() // Must close to avoid "text file busy"
 	return shfile
@@ -56,7 +58,7 @@ func ExtractMakefileCreate(shfile *os.File) *os.File {
 		log.Fatal(err)
 	}
 	mkfile.WriteString(fmt.Sprintf("include %s/Makefile\n", cwd))
-	mkfile.Sync()
+	mkfile.Close()
 
 	return mkfile
 }
@@ -64,18 +66,25 @@ func ExtractMakefileCreate(shfile *os.File) *os.File {
 // ExtractMake creates the shell script and the Makefile that are used to
 // create a busyna.rc from an existing Makefile
 func ExtractMake(outputfile string) {
-	os.Remove(outputfile)
+	rcfile, err := ioutil.TempFile(filepath.Dir(outputfile), "busyna.rc-")
+	if err != nil {
+		log.Fatal(err)
+	}
+	rcfile.Close()
 
-	shfile := ExtractShellCreate(outputfile)
-	defer os.Remove(shfile.Name())
-
+	shfile := ExtractShellCreate(rcfile.Name())
 	mkfile := ExtractMakefileCreate(shfile)
-	defer TmpEnd(mkfile)
 
-	cmd := exec.Command("make", "-B", "-f", mkfile.Name())
+	cmd := exec.Command("make", "-B", "-j1", "-f", mkfile.Name())
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
+		log.Fatal(fmt.Sprintf("%s while running make %s with shell %s to fill %s - keeping files", err, mkfile.Name(), shfile.Name(), rcfile.Name()))
+	}
+	os.Remove(shfile.Name())
+	os.Remove(mkfile.Name())
+
+	if err = os.Rename(rcfile.Name(), outputfile); err != nil {
 		log.Fatal(err)
 	}
 }
