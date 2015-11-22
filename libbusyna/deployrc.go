@@ -22,14 +22,17 @@ func DeployRc(c <-chan Cmd, outputfile string) {
 	rcdir := cwd
 
 	for cmd := range c {
-		reldir, err := filepath.Rel(rcdir, cmd.Dir)
-		if err != nil {
-			log.Fatal(err)
+		if cmd.Dir != "." {
+			reldir, err := filepath.Rel(rcdir, cmd.Dir)
+			if err != nil {
+				log.Fatal(err)
+			}
+			if reldir != "." {
+				fd.WriteString(fmt.Sprintf("cd %s\n", reldir))
+				rcdir = reldir
+			}
 		}
-		if reldir != "." {
-			fd.WriteString(fmt.Sprintf("cd %s\n", reldir))
-			rcdir = reldir
-		}
+		rcdir = cwd
 		fd.WriteString(cmd.Line)
 		fd.WriteString("\n")
 	}
