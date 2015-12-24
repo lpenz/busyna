@@ -9,10 +9,26 @@ import (
 // TestDeployRc tests the busyna.rc deploy function
 func TestDeployRc(t *testing.T) {
 	busynarc := []string{
-		`# create a file`,
-		`echo asdf > file1.txt`,
-		`# copy it to another two files in the same command`,
-		`cat file1.txt > file2.txt; cat file1.txt > file3.txt`,
+		`ls 0`,
+		// Environment, and then command:
+		`e=5`,
+		`ls 1`,
+		// Remove environment, repeat command:
+		`unset e`,
+		`ls 2`,
+		// Go to a subdir, run two commands:
+		`cd sub1`,
+		`ls 3`,
+		`ls 4`,
+		// Go to a subsubdir, run a commands:
+		`cd sub11`,
+		`ls 5`,
+		// Go back to a dir that is a child from top:
+		`cd ../../sub2`,
+		`ls 6`,
+		// Go back to the previous directory
+		`cd -`,
+		`ls 7`,
 	}
 
 	// Create answer from the file above:

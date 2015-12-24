@@ -2,7 +2,6 @@ package libbusyna
 
 import (
 	"errors"
-	"fmt"
 	"path/filepath"
 	"regexp"
 )
@@ -68,7 +67,7 @@ func parseLine(state *parseState, line string) <-chan Cmd {
 			// command line
 			cmd := Cmd{line, envcopy(state.env), state.dir, state.err}
 			if state.err == nil && filepath.IsAbs(state.dir) {
-				errstr := fmt.Sprintf("%s:%d: busyna.rc should use only relative directories", state.filename, state.linenum)
+				errstr := "busyna.rc should use only relative directories"
 				cmd.Err = errors.New(errstr)
 			}
 			rChan <- cmd

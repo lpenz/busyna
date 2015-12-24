@@ -67,8 +67,8 @@ func TestRcParser(t *testing.T) {
 		Cmd{`ls 4`, env0, `sub1`, nil},
 		Cmd{`ls 5`, env0, `sub1/sub11`, nil},
 		Cmd{`ls 6`, env0, `sub2`, nil},
-		Cmd{`ls 7`, env0, `/`, errors.New(":20: busyna.rc should use only relative directories")},
-		Cmd{`ls 8`, env0, `/`, errors.New(":21: busyna.rc should use only relative directories")},
+		Cmd{`ls 7`, env0, `/`, errors.New("busyna.rc should use only relative directories")},
+		Cmd{`ls 8`, env0, `/`, errors.New("busyna.rc should use only relative directories")},
 		Cmd{`ls 9`, env0, `.`, nil},
 		Cmd{`cmd =5`, env0, `.`, nil},
 	}
