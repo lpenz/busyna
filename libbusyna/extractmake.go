@@ -39,7 +39,8 @@ func ExtractShellCreate(outputfile string) *os.File {
 	shfile.WriteString(fmt.Sprintf("echo -n '(' >> %s\n\n", o))
 	shfile.WriteString(fmt.Sprintf("echo \"$@\" | sed 's@\\\\$@@' | tr -d '\\n' >> %s\n\n", o))
 	shfile.WriteString(fmt.Sprintf("echo ')' >> %s\n\n", o))
-	shfile.WriteString("exec /bin/sh -c \"$1\"\n\n")
+	//shfile.WriteString("echo exec /bin/sh -c \"$@\" >&2\n\n")
+	shfile.WriteString("exec /bin/sh -c \"$@\"\n\n")
 	shfile.Close() // Must close to avoid "text file busy"
 	return shfile
 }

@@ -23,6 +23,7 @@ var parseCommentRe = regexp.MustCompile(`^\s*#.*`)
 var parseChdirRe = regexp.MustCompile(`^\s*cd\s+(?P<dir>.+)\s*$`)
 var parseEnvRe = regexp.MustCompile(`^\s*(?P<key>[a-zA-Z_][a-zA-Z0-9_]*)=(?P<val>[a-zA-Z0-9_]*)\s*$`)
 var parseUnenvRe = regexp.MustCompile(`^\s*unset\s+(?P<key>[a-zA-Z_][a-zA-Z0-9_]*)\s*$`)
+var parseSetsRe = regexp.MustCompile(`^\s*set\s+.*`)
 
 // envcopy copies the provided env to another map
 func envcopy(env map[string]string) map[string]string {
@@ -59,6 +60,8 @@ func parseLine(state *parseState, line string) <-chan Cmd {
 		case parseUnenvRe.MatchString(line):
 			m := ReFindMap(parseUnenvRe, line)
 			delete(state.env, m["key"])
+		case parseSetsRe.MatchString(line):
+			// skip shell set's
 		case parseEmptyRe.MatchString(line):
 			// skip empty lines
 		case parseCommentRe.MatchString(line):

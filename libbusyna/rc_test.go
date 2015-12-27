@@ -28,6 +28,9 @@ func TestRcParser(t *testing.T) {
 		// Empty line skipping:
 		``,
 		` `,
+		`set -x -e`,
+		`set -e  -x`,
+		`set -e  -x	-o pipefail`,
 		"\t",
 		// Simple command, no env:
 		`echo zxcv _2 999`,
