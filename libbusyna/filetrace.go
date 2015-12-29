@@ -260,6 +260,9 @@ func StraceParse3(siChan <-chan Strace2Info) (map[string]bool, map[string]bool) 
 				r[filename] = true
 			case strings.Contains(args[1], "O_WRONLY"):
 				w[filename] = true
+			case strings.Contains(args[1], "O_RDWR"):
+				w[filename] = true
+				r[filename] = true
 			default:
 				log.Fatalf("unable to determine operation with %s", args[1])
 			}

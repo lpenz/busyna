@@ -183,19 +183,22 @@ func TestStraceParse3(t *testing.T) {
 		c <- `16821 open("/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3`
 		c <- `16821 open("w", O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC) = 4`
 		c <- `16821 open("r", O_RDONLY|O_CLOEXEC) = 5`
+		c <- `16821 open("rw", O_RDWR|O_NONBLOCK) = 6`
 		c <- `16821 creat("c", 01)                          = 6`
 	}()
 	r, w := StraceParse3(StraceParse2(c))
 	rok := map[string]bool{
 		"/etc/ld.so.cache": true,
 		"r":                true,
+		"rw":               true,
 	}
 	if !reflect.DeepEqual(r, rok) {
 		t.Error(r, "!=", rok)
 	}
 	wok := map[string]bool{
-		"w": true,
-		"c": true,
+		"w":  true,
+		"c":  true,
+		"rw": true,
 	}
 	if !reflect.DeepEqual(w, wok) {
 		t.Error(w, "!=", wok)
