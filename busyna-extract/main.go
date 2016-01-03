@@ -9,11 +9,15 @@ import (
 )
 
 func usage() {
-	fmt.Printf("Usage: busyna-extract <format: make> <output file>\n\n")
+	fmt.Fprintf(os.Stderr, "Usage: %s <format: make> <busyna.rc>\n", os.Args[0])
 	flag.PrintDefaults()
 }
 
 func main() {
+	flag.Usage = func() {
+		usage()
+	}
+
 	flag.Parse()
 
 	if flag.NArg() != 2 {
