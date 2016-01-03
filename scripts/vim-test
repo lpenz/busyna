@@ -1,0 +1,39 @@
+#!/bin/bash
+
+
+set -x -e
+
+: Cleanup
+rm -rf vim-rc vim-db busyna.rc busyna.db busyna.dot busyna-dot.png busyna.mk
+
+if ! [ -d vim0 ]; then
+    : Clone original vim to vim-0
+    git clone https://github.com/vim/vim.git vim-0
+fi
+
+cp -R vim-0 vim-rc
+(
+: Create the busyna.rc script
+cd vim-rc/src
+make configure
+sed -i '/SHELL = \/bin\/sh/d' Makefile
+sed -i 's/^#\s*QUOTESED\s*=.*/QUOTESED=cat/' Makefile
+sed -i 's@\(The name of the makefile MUST .*\)(.*@\1@' Makefile
+busyna-extract make ../../busyna.rc 
+./vim --version
+)
+
+cp -R vim-0 vim-db
+(
+: Create busyna.db
+cd vim-db/src
+busyna-run ../../busyna.rc ../../busyna.db
+./vim --version
+)
+
+: busyna.db created, test deploy
+busyna-deploy make busyna.db busyna.mk
+(cd vim-db/src; make -n -f ../../busyna.mk)
+busyna-deploy dot  busyna.db busyna.dot
+dot -Tpdf -o busyna-dot.pdf busyna.dot
+

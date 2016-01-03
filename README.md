@@ -106,6 +106,9 @@ show advantages provided by busyna.
 
 [Vim](http://www.vim.org) is the famous text editor, successor to *vi*.
 
+This case is used as a test, and the complete script is available
+at *scripts/vim-test*.
+
 
 ### Extracting busyna.rc
 
