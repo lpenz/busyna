@@ -6,7 +6,7 @@ set -x -e
 : Cleanup
 rm -rf vim-rc vim-db busyna.rc busyna.db busyna.dot busyna-dot.png busyna.mk
 
-if ! [ -d vim0 ]; then
+if ! [ -d vim-0 ]; then
     : Clone original vim to vim-0
     git clone https://github.com/vim/vim.git vim-0
 fi
@@ -31,9 +31,18 @@ busyna-run ../../busyna.rc ../../busyna.db
 ./vim --version
 )
 
-: busyna.db created, test deploy
+: busyna.db created
+
+: test make
 busyna-deploy make busyna.db busyna.mk
-(cd vim-db/src; make -n -f ../../busyna.mk)
+cp -R vim-0 vim-make
+(
+cd vim-make/src
+make -n -f ../../busyna.mk
+./vim --version
+)
+
+: test dot
 busyna-deploy dot  busyna.db busyna.dot
 dot -Tpdf -o busyna-dot.pdf busyna.dot
 

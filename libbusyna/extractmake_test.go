@@ -54,8 +54,8 @@ func TestExtractMake(t *testing.T) {
 		}
 	}()
 	// Write the Makefile:
-	writeFile(t, "Makefile", mkfile)
-	writeFile(t, "mkfile", makefile)
+	writeFile(t, "Makefile", makefile)
+	writeFile(t, "mkfile", mkfile)
 	// Extract it:
 	ExtractMake("test.rc")
 	// Remove the created targets

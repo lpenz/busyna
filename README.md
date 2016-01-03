@@ -114,11 +114,17 @@ at *scripts/vim-test*.
 
 To be able to use *busyna-extract*, we make the following changes
 in *vim/src/Makefile* (all commands are supposed to be executed inside *vim/src*):
-- remove the line that sets the shell, as *busyna-extract* uses a custom shell
+- Remove the line that sets the shell, as *busyna-extract* uses a custom shell
   to process the *Makefile*:
 
   ```
   sed -i '/SHELL = \/bin\/sh/d' Makefile
+  ```
+- Remove the line that sends the value of MAKE to a shell script, as it messes
+  up with how *busyna-extract* detects recursive make invokations:
+
+  ```
+  sed -i '/MAKE="$[(]MAKE[)]"/d' src/Makefile
   ```
 - Set *QUOTESED* to the empty string; the variable sets up processing that is
   not needed with *busyna-extract*:
