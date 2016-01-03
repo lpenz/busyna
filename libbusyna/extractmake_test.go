@@ -3,12 +3,29 @@ package libbusyna
 import (
 	"os"
 	"os/exec"
+	"reflect"
 	"testing"
 )
 
-// TestExtractMake tests the make deploy function
+func writeFile(t *testing.T, filename string, contents []string) {
+	fd, err := os.Create(filename)
+	if err != nil {
+		t.Error(err)
+	}
+	for _, l := range contents {
+		fd.WriteString(l)
+		fd.WriteString("\n")
+	}
+	fd.Close()
+}
+
+// TestExtractMake tests the make extract function
 func TestExtractMake(t *testing.T) {
 	makefile := []string{
+		`all:`,
+		"\t$(MAKE) -f mkfile",
+	}
+	mkfile := []string{
 		`all: file1.txt file2.txt`,
 		``,
 		`# create a file`,
@@ -22,33 +39,23 @@ func TestExtractMake(t *testing.T) {
 		``,
 	}
 	defer func() {
-		if err := os.Remove("Makefile"); err != nil {
-			t.Error(err)
-		}
-		if err := os.Remove("test.rc"); err != nil {
-			t.Error(err)
-		}
-		// These also test if the files were created:
-		if err := os.Remove("file1.txt"); err != nil {
-			t.Error(err)
-		}
-		if err := os.Remove("file2.txt"); err != nil {
-			t.Error(err)
-		}
-		if err := os.Remove("file3.txt"); err != nil {
-			t.Error(err)
+		for _, f := range []string{
+			"mkfile",
+			"Makefile",
+			"test.rc",
+			// These also test if the files were created:
+			"file1.txt",
+			"file2.txt",
+			"file3.txt",
+		} {
+			if err := os.Remove(f); err != nil {
+				t.Error(err)
+			}
 		}
 	}()
 	// Write the Makefile:
-	fd, err := os.Create("Makefile")
-	if err != nil {
-		t.Error(err)
-	}
-	for _, l := range makefile {
-		fd.WriteString(l)
-		fd.WriteString("\n")
-	}
-	fd.Close()
+	writeFile(t, "Makefile", mkfile)
+	writeFile(t, "mkfile", makefile)
 	// Extract it:
 	ExtractMake("test.rc")
 	// Remove the created targets
@@ -57,11 +64,25 @@ func TestExtractMake(t *testing.T) {
 	os.Remove("file3.txt")
 	// Run the created test.rc with the shell.
 	// The defer's above check if the files are created.
+	// That also checks busyna shell compatibility.
 	cmd := exec.Command("/bin/sh", "test.rc")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	if err = cmd.Run(); err != nil {
+	if err := cmd.Run(); err != nil {
 		t.Errorf("%s while running test.rc with shell", err)
 	}
-	// That also checks busyna shell compatibility.
+	// Check the answer:
+	env0 := map[string]string{}
+	ans := []Cmd{
+		Cmd{`(echo asdf > file1.txt)`, env0, `.`, nil},
+		Cmd{`(cat file1.txt > file2.txt)`, env0, `.`, nil},
+		Cmd{`(cat file1.txt > file3.txt)`, env0, `.`, nil},
+	}
+	i := 0
+	for cmd := range RcParse("", ChanFromFile("test.rc")) {
+		if !reflect.DeepEqual(cmd, ans[i]) {
+			t.Errorf("cmd %d mismatch: %v != %v", i, cmd, ans[i])
+		}
+		i++
+	}
 }
