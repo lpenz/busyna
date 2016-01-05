@@ -19,23 +19,25 @@ func TestDeployMake(t *testing.T) {
 		`echo asdf > file1.txt`,
 		`# copy it to another two files in the same command`,
 		`cat file1.txt > file2.txt; cat file1.txt > file3.txt`,
+		`# create a dir, cd and write a file`,
+		`mkdir -p d`,
+		`cd d`,
+		`echo > t`,
 	}
 	defer func() {
-		if err := os.Remove("test.db"); err != nil {
-			t.Error(err)
-		}
-		if err := os.Remove("Makefile"); err != nil {
-			t.Error(err)
+		for _, f := range []string{`test.db`, `Makefile`} {
+			if err := os.Remove(f); err != nil {
+				t.Error(err)
+			}
 		}
 	}()
 	// Write the database:
 	DbWrite(RcRun(RcParse("", ChanFromList(busynarc))), "test.db")
 	// Remove target files:
-	if err := os.Remove("file1.txt"); err != nil {
-		t.Error(err)
-	}
-	if err := os.Remove("file2.txt"); err != nil {
-		t.Error(err)
+	for _, f := range []string{`file1.txt`, `file2.txt`, `d/t`, `d`} {
+		if err := os.Remove(f); err != nil {
+			t.Error(err)
+		}
 	}
 	// Create Makefile
 	DeployMake(DbRead("test.db"), "Makefile")
@@ -44,20 +46,18 @@ func TestDeployMake(t *testing.T) {
 		t.Error(err)
 	}
 	// Let's see if the files are there:
-	if !exists("file1.txt") {
-		t.Error("make target not found")
-	}
-	if !exists("file2.txt") {
-		t.Error("make target not found")
+	for _, f := range []string{`file1.txt`, `file2.txt`, `d/t`, `d`} {
+		if !exists(f) {
+			t.Errorf("make target %s not found", f)
+		}
 	}
 	// Test make clean
 	if err := exec.Command("make", "clean").Run(); err != nil {
 		t.Error(err)
 	}
-	if exists("file1.txt") {
-		t.Error("make clean did not rm target")
-	}
-	if exists("file2.txt") {
-		t.Error("make clean did not rm target")
+	for _, f := range []string{`file1.txt`, `file2.txt`, `d/t`, `d`} {
+		if exists(f) {
+			t.Errorf("make clean did not rm target %s", f)
+		}
 	}
 }

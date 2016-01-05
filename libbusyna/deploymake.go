@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 )
 
-// Create a dot graphviz file with db data read form the provided channel.
+// Create a Makefile file with db data read form the provided channel.
 func DeployMake(c <-chan CmdData, outputfile string) {
 	fd, err := ioutil.TempFile(filepath.Dir(outputfile), "Makefile-")
 	if err != nil {
@@ -24,7 +24,8 @@ func DeployMake(c <-chan CmdData, outputfile string) {
 	// Rules:
 	targets := map[string][]CmdData{}
 	for cmddata := range c {
-		for target := range cmddata.Targets {
+		for target0 := range cmddata.Targets {
+			target := filepath.Join(cmddata.Cmd.Dir, target0)
 			if tcmds, ok := targets[target]; ok {
 				targets[target] = append(tcmds, cmddata)
 			} else {
@@ -35,14 +36,19 @@ func DeployMake(c <-chan CmdData, outputfile string) {
 	for target, cmddatas := range targets {
 		fd.WriteString(fmt.Sprintf("%s:", target))
 		for _, cmddata := range cmddatas {
-			for dep := range cmddata.Deps {
+			for dep0 := range cmddata.Deps {
+				dep := filepath.Join(cmddata.Cmd.Dir, dep0)
 				if dep != target {
 					fd.WriteString(fmt.Sprintf(" %s", dep))
 				}
 			}
 		}
 		for _, cmddata := range cmddatas {
-			fd.WriteString(fmt.Sprintf("\n\t%s", cmddata.Cmd.Line))
+			fd.WriteString("\n\t")
+			if cmddata.Cmd.Dir != "." && cmddata.Cmd.Dir != "" {
+				fd.WriteString(fmt.Sprintf("mkdir -p \"%s\"; cd \"%s\"; ", cmddata.Cmd.Dir, cmddata.Cmd.Dir))
+			}
+			fd.WriteString(cmddata.Cmd.Line)
 		}
 		fd.WriteString("\n\n")
 	}
@@ -59,6 +65,7 @@ func DeployMake(c <-chan CmdData, outputfile string) {
 	for target := range targets {
 		fd.WriteString(fmt.Sprintf(" '%s'", target))
 	}
+	fd.WriteString("\n\tfind . -depth -type d -exec rmdir {} \\; 2>/dev/null || true")
 	fd.WriteString("\n\n")
 
 	fd.Close()
