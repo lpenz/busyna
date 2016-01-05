@@ -231,17 +231,53 @@ func StraceParse2(strace1Chan <-chan string) <-chan Strace2Info {
 
 // strace level 3 parser: ####################################################
 
-// StraceParse3 uses the structured strace output to generate the
-// files read/written information.
-// Returns read files, written files.
-func StraceParse3(siChan <-chan Strace2Info) (map[string]bool, map[string]bool) {
-	r := make(map[string]bool)
-	w := make(map[string]bool)
-	wd, err := os.Getwd()
+// evalsymlinks evals symlinks in paths of files that may not exist
+func evalsymlinks(path string) string {
+	var err error
+	b := filepath.Base(path)
+	d := filepath.Dir(path)
+	dok, err := filepath.EvalSymlinks(d)
+	if err != nil {
+		return filepath.Join(evalsymlinks(d), b)
+	}
+	return filepath.Join(dok, b)
+}
+
+// pathrel solves path p and makes it relative to absdir
+func pathrel(absdir string, cwd string, p string) string {
+	var err error
+	var absp string
+	if path.IsAbs(p) {
+		absp = p
+	} else {
+		absp = filepath.Join(cwd, p)
+	}
+	absp = evalsymlinks(absp)
+	var ret string
+	if strings.HasPrefix(absp, absdir) {
+		ret, err = filepath.Rel(absdir, absp)
+	} else {
+		ret = absp
+		err = error(nil)
+	}
 	if err != nil {
 		log.Fatal(err)
 	}
-	dir := wd
+	return ret
+}
+
+// StraceParse3 uses the structured strace output to generate the
+// files read/written information.
+// Returns read files, written files.
+func StraceParse3(siChan <-chan Strace2Info, dir string) (map[string]bool, map[string]bool) {
+	r := make(map[string]bool)
+	w := make(map[string]bool)
+	absdir, err := filepath.Abs(dir)
+	if err != nil {
+		log.Fatal(err)
+	}
+	absdir = evalsymlinks(absdir)
+	cwd := absdir
 	for i := range siChan {
 		if i.result < 0 {
 			continue
@@ -250,10 +286,7 @@ func StraceParse3(siChan <-chan Strace2Info) (map[string]bool, map[string]bool) 
 		case "creat":
 			w[i.args[0][1:len(i.args[0])-1]] = true
 		case "open":
-			filename := i.args[0][1 : len(i.args[0])-1]
-			if !path.IsAbs(filename) {
-				filename, _ = filepath.Rel(wd, path.Join(dir, filename))
-			}
+			filename := pathrel(absdir, cwd, i.args[0][1:len(i.args[0])-1])
 			args := i.args
 			switch {
 			case strings.Contains(args[1], "O_RDONLY"):
@@ -267,11 +300,11 @@ func StraceParse3(siChan <-chan Strace2Info) (map[string]bool, map[string]bool) 
 				log.Fatalf("unable to determine operation with %s", args[1])
 			}
 		case "unlinkat":
-			filename := i.args[1][1 : len(i.args[1])-1]
+			filename := pathrel(absdir, cwd, i.args[0][1:len(i.args[0])-1])
 			delete(r, filename)
 			delete(w, filename)
 		case "chdir":
-			dir = i.args[0][1 : len(i.args[0])-1]
+			cwd = pathrel(absdir, cwd, i.args[0][1:len(i.args[0])-1])
 		}
 	}
 	return r, w
@@ -282,16 +315,21 @@ func StraceParse3(siChan <-chan Strace2Info) (map[string]bool, map[string]bool) 
 // FileTrace runs the given command and return two channels: the first with the
 // files read and the second with the files written.
 func FileTrace(command string, env map[string]string, dir string) (map[string]bool, map[string]bool) {
-	r, w := StraceParse3(StraceParse2(StraceParse1(StraceRun(command, env, dir))))
+	if dir == "" {
+		dir = "."
+	}
+	r, w := StraceParse3(StraceParse2(StraceParse1(StraceRun(command, env, dir))), dir)
 	/* Failsafe: remove references to files that are no longer there */
-	for f := range r {
+	for f0 := range r {
+		f := path.Join(dir, f0)
 		if st, err := os.Stat(f); os.IsNotExist(err) || !st.Mode().IsRegular() {
-			delete(r, f)
+			delete(r, f0)
 		}
 	}
-	for f := range w {
+	for f0 := range w {
+		f := path.Join(dir, f0)
 		if st, err := os.Stat(f); os.IsNotExist(err) || !st.Mode().IsRegular() {
-			delete(w, f)
+			delete(w, f0)
 		}
 	}
 	return r, w

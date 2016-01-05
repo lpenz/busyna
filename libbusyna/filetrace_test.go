@@ -186,7 +186,7 @@ func TestStraceParse3(t *testing.T) {
 		c <- `16821 open("rw", O_RDWR|O_NONBLOCK) = 6`
 		c <- `16821 creat("c", 01)                          = 6`
 	}()
-	r, w := StraceParse3(StraceParse2(c))
+	r, w := StraceParse3(StraceParse2(c), "")
 	rok := map[string]bool{
 		"/etc/ld.so.cache": true,
 		"r":                true,
@@ -215,8 +215,8 @@ var empty = map[string]bool{}
 
 // filetraceTest is the primitive test function that runs the provided command
 // and checks if the set of files read and written match the ones provided.
-func filetraceTest(t *testing.T, cmd string, rok map[string]bool, wok map[string]bool) {
-	rt, wt := FileTrace(cmd, nil, "")
+func filetraceTest(t *testing.T, cmd string, dir string, rok map[string]bool, wok map[string]bool) {
+	rt, wt := FileTrace(cmd, nil, dir)
 	if len(straceRbase) == 0 {
 		straceRbase, _ = FileTrace("", nil, "")
 	}
@@ -241,6 +241,7 @@ func TestFiletraceEchocat(t *testing.T) {
 	empty := map[string]bool{}
 	filetraceTest(t,
 		"echo asdf > t",
+		"",
 		empty,
 		map[string]bool{"t": true})
 	defer func() {
@@ -250,6 +251,7 @@ func TestFiletraceEchocat(t *testing.T) {
 	}()
 	filetraceTest(t,
 		"cat t > h",
+		"",
 		map[string]bool{"t": true},
 		map[string]bool{"h": true})
 	defer func() {
@@ -259,6 +261,7 @@ func TestFiletraceEchocat(t *testing.T) {
 	}()
 	filetraceTest(t,
 		"cp t j",
+		"",
 		map[string]bool{"t": true},
 		map[string]bool{"j": true})
 	defer func() {
@@ -268,10 +271,11 @@ func TestFiletraceEchocat(t *testing.T) {
 	}()
 }
 
-// TestFiletraceDirs tests directory chaging.
-func TestFiletraceDirs(t *testing.T) {
+// TestFiletraceChdir tests directory chaging.
+func TestFiletraceChdir(t *testing.T) {
 	filetraceTest(t,
 		"mkdir d; cd d; echo asdf > t",
+		"",
 		empty,
 		map[string]bool{"d/t": true})
 	defer func() {
@@ -301,4 +305,21 @@ func TestFiletraceEnv(t *testing.T) {
 	if !strings.Contains(datastr, "x=y") {
 		t.Fatalf("environment x=y not found in %s", datastr)
 	}
+}
+
+// TestFiletraceDir tests the dir argument.
+func TestFiletraceDir(t *testing.T) {
+	os.Mkdir("d", 0755)
+	filetraceTest(t,
+		"mkdir -p s/ss; cd s; cd ss; echo asdf > t; echo zxcv > z; rm z",
+		"d",
+		empty,
+		map[string]bool{"s/ss/t": true})
+	defer func() {
+		for _, f := range []string{"d/s/ss/t", "d/s/ss", "d/s", "d"} {
+			if err := os.Remove(f); err != nil {
+				t.Error(err)
+			}
+		}
+	}()
 }
