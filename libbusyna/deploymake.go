@@ -46,7 +46,7 @@ func DeployMake(c <-chan CmdData, outputfile string) {
 		for _, cmddata := range cmddatas {
 			fd.WriteString("\n\t")
 			if cmddata.Cmd.Dir != "." && cmddata.Cmd.Dir != "" {
-				fd.WriteString(fmt.Sprintf("mkdir -p \"%s\"; cd \"%s\"; ", cmddata.Cmd.Dir, cmddata.Cmd.Dir))
+				fd.WriteString(fmt.Sprintf("mkdir -p \"%s\"; mkdir -p \"%s\"; cd \"%s\"; ", cmddata.Cmd.Dir, filepath.Dir(target), cmddata.Cmd.Dir))
 			}
 			fd.WriteString(cmddata.Cmd.Line)
 		}
