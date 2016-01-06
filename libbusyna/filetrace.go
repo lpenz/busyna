@@ -303,6 +303,11 @@ func StraceParse3(siChan <-chan Strace2Info, dir string) (map[string]bool, map[s
 			filename := pathrel(absdir, cwd, i.args[0][1:len(i.args[0])-1])
 			delete(r, filename)
 			delete(w, filename)
+		case "rename":
+			orig := pathrel(absdir, cwd, i.args[0][1:len(i.args[0])-1])
+			delete(w, orig)
+			dest := pathrel(absdir, cwd, i.args[1][1:len(i.args[1])-1])
+			w[dest] = true
 		case "chdir":
 			cwd = pathrel(absdir, cwd, i.args[0][1:len(i.args[0])-1])
 		}

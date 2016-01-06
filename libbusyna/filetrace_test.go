@@ -323,3 +323,18 @@ func TestFiletraceDir(t *testing.T) {
 		}
 	}()
 }
+
+// TestFiletraceRename tests renaming
+func TestFiletraceRename(t *testing.T) {
+	empty := map[string]bool{}
+	filetraceTest(t,
+		"echo asdf > t; mv t v",
+		"",
+		empty,
+		map[string]bool{"v": true})
+	defer func() {
+		if err := os.Remove("v"); err != nil {
+			t.Error(err)
+		}
+	}()
+}
