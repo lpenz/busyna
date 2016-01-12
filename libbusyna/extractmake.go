@@ -42,7 +42,7 @@ func ExtractShellCreate(rcfile *os.File) *os.File {
 		ev := strings.Split(e, "=")
 		shfile.WriteString(fmt.Sprintf("unset %s\n", ev[0]))
 	}
-	shfile.WriteString(fmt.Sprintf("/usr/bin/env >> %s\n", rcfile.Name()))
+	shfile.WriteString(fmt.Sprintf("/usr/bin/env | /bin/sed 's@\\(^[^=]\\+\\)=\\(.*\\)$@\\1='\"'\"'\\2'\"'\"'@' >> %s\n", rcfile.Name()))
 	shfile.WriteString(")\n")
 	shfile.WriteString(fmt.Sprintf("echo cd \"$PWD\" >> %s\n\n", rcfile.Name()))
 	shfile.WriteString(fmt.Sprintf("echo -n '(' >> %s\n\n", rcfile.Name()))

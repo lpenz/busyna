@@ -30,7 +30,7 @@ func DeployRc(c <-chan Cmd, outputfile string) {
 		for k, v := range cmd.Env {
 			v0, found := env[k]
 			if !found || v0 != v {
-				fd.WriteString(fmt.Sprintf("%s=%v\n", k, v))
+				fd.WriteString(fmt.Sprintf("%s='%v'\n", k, v))
 				env[k] = v
 			}
 		}

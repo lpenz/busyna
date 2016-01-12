@@ -61,6 +61,8 @@ func TestRcParser(t *testing.T) {
 		`ls 9`,
 		// Some weird commands:
 		`cmd =5`,
+		`e='5 9'`,
+		`ls 10`,
 	}
 	ans := []Cmd{
 		Cmd{`echo zxcv _2 999`, env0, `.`, nil},
@@ -74,6 +76,7 @@ func TestRcParser(t *testing.T) {
 		Cmd{`ls 8`, env0, `/`, errors.New("busyna.rc should use only relative directories")},
 		Cmd{`ls 9`, env0, `.`, nil},
 		Cmd{`cmd =5`, env0, `.`, nil},
+		Cmd{`ls 10`, map[string]string{`e`: `5 9`}, `.`, nil},
 	}
 	cmds := rctolist(busynarc)
 	if len(ans) != len(cmds) {

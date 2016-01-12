@@ -23,7 +23,7 @@ func writeFile(t *testing.T, filename string, contents []string) {
 func TestExtractMake(t *testing.T) {
 	makefile := []string{
 		`all:`,
-		"\t$(MAKE) -f mkfile",
+		"\tTEST=test\\ with\\ spaces $(MAKE) -f mkfile",
 	}
 	mkfile := []string{
 		`all: file1.txt file2.txt`,
@@ -72,7 +72,9 @@ func TestExtractMake(t *testing.T) {
 		t.Errorf("%s while running test.rc with shell", err)
 	}
 	// Check the answer:
-	env0 := map[string]string{}
+	env0 := map[string]string{
+		`TEST`: `test with spaces`,
+	}
 	ans := []Cmd{
 		Cmd{`(echo asdf > file1.txt)`, env0, `.`, nil},
 		Cmd{`(cat file1.txt > file2.txt)`, env0, `.`, nil},
