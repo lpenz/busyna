@@ -15,7 +15,7 @@ func DeployRc(c <-chan Cmd, outputfile string) {
 		log.Fatal(err)
 	}
 	defer os.Remove(fd.Name())
-	fd.WriteString("#!/bin/sh\n\nset -e -x\n\n")
+	fd.WriteString("#!/bin/sh\n\nset -x\n\n")
 
 	cwd0, err := os.Getwd()
 	if err != nil {
