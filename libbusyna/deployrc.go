@@ -9,7 +9,20 @@ import (
 	"strings"
 )
 
-func DeployRc(c <-chan Cmd, outputfile string) {
+func DeployRc(c <-chan CmdData, outputfile string) {
+	rChan := make(chan Cmd)
+	go func() {
+		defer close(rChan)
+		for cmddata := range c {
+			if len(cmddata.Targets) > 0 {
+				rChan <- cmddata.Cmd
+			}
+		}
+	}()
+	DeployRcCmd(rChan, outputfile)
+}
+
+func DeployRcCmd(c <-chan Cmd, outputfile string) {
 	fd, err := ioutil.TempFile(filepath.Dir(outputfile), "busyna.rc-")
 	if err != nil {
 		log.Fatal(err)

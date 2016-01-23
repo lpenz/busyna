@@ -78,5 +78,5 @@ func ExtractMake(outputfile string) {
 		log.Fatal(fmt.Sprintf("%s while running make with shell %s to fill %s - keeping files", err, shfile.Name(), rcfile.Name()))
 	}
 
-	DeployRc(RcParse(rcfile.Name(), ChanFromFile(rcfile.Name())), outputfile)
+	DeployRcCmd(RcParse(rcfile.Name(), ChanFromFile(rcfile.Name())), outputfile)
 }

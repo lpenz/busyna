@@ -28,6 +28,8 @@ func main() {
 	db := flag.Arg(1)
 	output := flag.Arg(2)
 	switch format {
+	case "busyna":
+		libbusyna.DeployRc(libbusyna.DbRead(db), output)
 	case "dot":
 		libbusyna.DeployDot(libbusyna.DbRead(db), output)
 	case "make":

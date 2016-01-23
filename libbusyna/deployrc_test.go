@@ -7,7 +7,7 @@ import (
 )
 
 // TestDeployRc tests the busyna.rc deploy function
-func TestDeployRc(t *testing.T) {
+func TestDeployRcCmd(t *testing.T) {
 	busynarc := []string{
 		`ls 0`,
 		// Environment, and then command:
@@ -43,7 +43,7 @@ func TestDeployRc(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.Remove(fd.Name())
-	DeployRc(RcParse("", ChanFromList(busynarc)), fd.Name())
+	DeployRcCmd(RcParse("", ChanFromList(busynarc)), fd.Name())
 	cmds := []Cmd{}
 	for c := range RcParse("", ChanFromFile(fd.Name())) {
 		cmds = append(cmds, c)
@@ -57,5 +57,38 @@ func TestDeployRc(t *testing.T) {
 		if !CmdEqual(cmds[i], ans[i]) {
 			t.Errorf("i %d Cmd mismatch: %v != %v", i, cmds[i], ans[i])
 		}
+	}
+}
+
+// TestDeployRc checks that DeployRc skips lines that touch no files
+func TestDeployRc(t *testing.T) {
+	busynarc := []string{
+		`echo asdf`,
+		`echo > asdf`,
+	}
+	defer func() {
+		for _, f := range []string{`test.db`, `busyna.rc`} {
+			if err := os.Remove(f); err != nil {
+				t.Error(err)
+			}
+		}
+	}()
+	// Write the database:
+	DbWrite(RcRun(RcParse("", ChanFromList(busynarc))), "test.db")
+	// Remove target files:
+	for _, f := range []string{`asdf`} {
+		if err := os.Remove(f); err != nil {
+			t.Error(err)
+		}
+	}
+	// Create busyna.rc
+	DeployRc(DbRead("test.db"), "busyna.rc")
+	// Parse busyna.rc, check number of commands
+	ans := []Cmd{}
+	for c := range RcParse("", ChanFromFile(`busyna.rc`)) {
+		ans = append(ans, c)
+	}
+	if len(ans) != 1 {
+		t.Fatal(`expecting single command`)
 	}
 }
