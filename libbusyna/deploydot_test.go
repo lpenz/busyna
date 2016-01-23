@@ -10,7 +10,7 @@ import (
 func TestDeployDot(t *testing.T) {
 	busynarc := []string{
 		`# create a file`,
-		`echo asdf > file1.txt`,
+		`echo '\"asdf' > file1.txt`,
 		`# copy it to another`,
 		`cat file1.txt > file2.txt`,
 	}

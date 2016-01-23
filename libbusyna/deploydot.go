@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -20,8 +21,9 @@ func DeployDot(c <-chan CmdData, outputfile string) {
 	fd.WriteString("digraph {\n\trankdir=LR\n\n")
 	i := 0
 	found := map[string]bool{}
+	fixre := regexp.MustCompile(`[^\\]"`)
 	for cmddata := range c {
-		fd.WriteString(fmt.Sprintf("\tnode%d [ label=\"%s\" ]\n", i, strings.Replace(cmddata.Cmd.Line, `"`, `\"`, -1)))
+		fd.WriteString(fmt.Sprintf("\tnode%d [ label=\"%s\" ]\n", i, fixre.ReplaceAllString(cmddata.Cmd.Line, `\"`)))
 
 		for dep := range cmddata.Deps {
 			if strings.HasPrefix(dep, "/") {
