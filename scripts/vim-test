@@ -9,11 +9,12 @@ rm -rf vim-make busyna.mk
 rm -rf busyna.dot busyna-dot.png
 
 if ! [ -d vim-0 ]; then
-    : Clone original vim to vim-0
+    : busyna vim-test: clone original vim to vim-0
     git clone https://github.com/vim/vim.git vim-0
+    (cd vim-0; git reset --hard v7.4.1153)
 fi
 
-: Create the busyna.rc script
+: busyna vim-test: Create the busyna.rc script
 cp -R vim-0 vim-rc
 (
 cd vim-rc
@@ -25,19 +26,15 @@ busyna-extract make ../busyna.rc
 ./src/vim --version
 )
 
-: Test the script with shell
+: busyna vim-test: Test the script with shell
 cp -Rl vim-0 vim-sh
 (
 cd vim-sh
-sed -i '/SHELL = \/bin\/sh/d' src/Makefile
-sed -i '/MAKE="$[(]MAKE[)]"/d' src/Makefile
-sed -i 's/^#\s*QUOTESED\s*=.*/QUOTESED=cat/' src/Makefile
-sed -i 's@\(The name of the makefile MUST .*\)(.*@\1@' src/Makefile
 /bin/sh ../busyna.rc
 ./src/vim --version
 )
 
-: Create busyna.db
+: busyna vim-test: create busyna.db
 cp -R vim-0 vim-db
 (
 cd vim-db
@@ -46,24 +43,21 @@ busyna-run ../busyna.rc ../busyna.db
 : busyna.db created
 )
 
-: Test deploying busyna.rc
+: busyna vim-test: test deploying busyna.rc
 busyna-deploy busyna busyna.db busyna.rc
 cp -R vim-0 vim-rc2
 (
 cd vim-rc2
-sed -i '/SHELL = \/bin\/sh/d' src/Makefile
-sed -i '/MAKE="$[(]MAKE[)]"/d' src/Makefile
-sed -i 's/^#\s*QUOTESED\s*=.*/QUOTESED=cat/' src/Makefile
-sed -i 's@\(The name of the makefile MUST .*\)(.*@\1@' src/Makefile
+mkdir src/objects
 /bin/sh ../busyna.rc
 ./src/vim --version
 )
 
-: Test deploying dot
-busyna-deploy dot  busyna.db busyna.dot
+: busyna vim-test: test deploying dot
+busyna-deploy dot busyna.db busyna.dot
 dot -Tpdf -o busyna-dot.pdf busyna.dot
 
-: Test deploying make
+: busyna vim-test: test deploying make
 busyna-deploy make busyna.db busyna.mk
 cp -R vim-0 vim-make
 (
