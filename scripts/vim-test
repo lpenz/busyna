@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 set -x -e
 
 #: Cleanup
@@ -26,6 +25,18 @@ busyna-extract make ../busyna.rc
 ./src/vim --version
 )
 
+: Test the script with shell
+cp -Rl vim-0 vim-sh
+(
+cd vim-sh
+sed -i '/SHELL = \/bin\/sh/d' src/Makefile
+sed -i '/MAKE="$[(]MAKE[)]"/d' src/Makefile
+sed -i 's/^#\s*QUOTESED\s*=.*/QUOTESED=cat/' src/Makefile
+sed -i 's@\(The name of the makefile MUST .*\)(.*@\1@' src/Makefile
+/bin/sh ../busyna.rc
+./src/vim --version
+)
+
 : Create busyna.db
 cp -R vim-0 vim-db
 (
@@ -33,6 +44,19 @@ cd vim-db
 busyna-run ../busyna.rc ../busyna.db
 ./src/vim --version
 : busyna.db created
+)
+
+: Test deploying busyna.rc
+busyna-deploy busyna busyna.db busyna.rc
+cp -R vim-0 vim-rc2
+(
+cd vim-rc2
+sed -i '/SHELL = \/bin\/sh/d' src/Makefile
+sed -i '/MAKE="$[(]MAKE[)]"/d' src/Makefile
+sed -i 's/^#\s*QUOTESED\s*=.*/QUOTESED=cat/' src/Makefile
+sed -i 's@\(The name of the makefile MUST .*\)(.*@\1@' src/Makefile
+/bin/sh ../busyna.rc
+./src/vim --version
 )
 
 : Test deploying dot
