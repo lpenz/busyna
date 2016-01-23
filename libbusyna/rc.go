@@ -19,7 +19,7 @@ type parseState struct {
 }
 
 var parseEmptyRe = regexp.MustCompile(`^\s*$`)
-var parseCommentRe = regexp.MustCompile(`^\s*#.*`)
+var parseCommentRe = regexp.MustCompile(`^\s*\(?\s*[#:].*`)
 var parseChdirRe = regexp.MustCompile(`^\s*cd\s+(?P<dir>.+)\s*$`)
 var parseEnvRe = regexp.MustCompile(`^\s*(?P<key>[a-zA-Z_][a-zA-Z0-9_]*)=(?P<val>[a-zA-Z0-9_]*)\s*$`)
 var parseEnvEscapedRe = regexp.MustCompile(`^\s*(?P<key>[a-zA-Z_][a-zA-Z0-9_]*)=["'](?P<val>[^']*)["']\s*$`)
