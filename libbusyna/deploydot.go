@@ -23,7 +23,7 @@ func DeployDot(c <-chan CmdData, outputfile string) {
 	found := map[string]bool{}
 	fixre := regexp.MustCompile(`[^\\]"`)
 	for cmddata := range c {
-		fd.WriteString(fmt.Sprintf("\tnode%d [ label=\"%s\" ]\n", i, fixre.ReplaceAllString(cmddata.Cmd.Line, `\"`)))
+		fd.WriteString(fmt.Sprintf("\tnode%d [ label=\"%d\" tooltip=\"%s\" ]\n", i, i, fixre.ReplaceAllString(cmddata.Cmd.Line, `\"`)))
 
 		for dep := range cmddata.Deps {
 			if strings.HasPrefix(dep, "/") {
