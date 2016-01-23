@@ -21,7 +21,7 @@ func DeployDot(c <-chan CmdData, outputfile string) {
 	fd.WriteString("digraph {\n\trankdir=LR\n\n")
 	i := 0
 	found := map[string]bool{}
-	fixre := regexp.MustCompile(`[^\\]"`)
+	fixre := regexp.MustCompile(`[^\\]"+`)
 	for cmddata := range c {
 		fd.WriteString(fmt.Sprintf("\tnode%d [ label=\"%d\" tooltip=\"%s\" ]\n", i, i, fixre.ReplaceAllString(cmddata.Cmd.Line, `\"`)))
 
