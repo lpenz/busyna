@@ -9,7 +9,7 @@ import (
 )
 
 func usage() {
-	fmt.Fprintf(os.Stderr, "Usage: %s <format: dot|make> <busyna.db> <output.mk/output.dot>\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "Usage: %s <format: dot|make|busyna> <busyna.db> <output.mk/output.dot>\n", os.Args[0])
 	flag.PrintDefaults()
 }
 
