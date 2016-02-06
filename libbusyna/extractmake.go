@@ -34,6 +34,8 @@ func ExtractShellCreate(rcfile *os.File) *os.File {
 		`unset MAKEFLAGS`,
 		`unset MFLAGS`,
 		`unset MAKELEVEL`,
+		`unset MAKE_TERMOUT`,
+		`unset MAKE_TERMERR`,
 	} {
 		shfile.WriteString(l)
 		shfile.WriteString("\n")
