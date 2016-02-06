@@ -216,10 +216,10 @@ var empty = map[string]bool{}
 // filetraceTest is the primitive test function that runs the provided command
 // and checks if the set of files read and written match the ones provided.
 func filetraceTest(t *testing.T, cmd string, dir string, rok map[string]bool, wok map[string]bool) {
-	rt, wt := FileTrace(cmd, nil, dir)
 	if len(straceRbase) == 0 {
 		straceRbase, _ = FileTrace("", nil, "")
 	}
+	rt, wt := FileTrace(cmd, nil, dir)
 	rtst := map[string]bool{}
 	for r := range rok {
 		rtst[r] = true
@@ -335,6 +335,22 @@ func TestFiletraceRename(t *testing.T) {
 	defer func() {
 		if err := os.Remove("v"); err != nil {
 			t.Error(err)
+		}
+	}()
+}
+
+// TestFiletraceChdirPid tests directory chaging in different processes
+func TestFiletraceChdirPid(t *testing.T) {
+	filetraceTest(t,
+		"(mkdir d; cd d; echo asdf > t); echo asdf > u",
+		"",
+		empty,
+		map[string]bool{"d/t": true, "u": true})
+	defer func() {
+		for _, f := range []string{`d/t`, `d`, `u`} {
+			if err := os.Remove(f); err != nil {
+				t.Error(err)
+			}
 		}
 	}()
 }

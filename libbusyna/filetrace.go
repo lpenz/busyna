@@ -277,16 +277,23 @@ func StraceParse3(siChan <-chan Strace2Info, dir string) (map[string]bool, map[s
 		log.Fatal(err)
 	}
 	absdir = evalsymlinks(absdir)
-	cwd := absdir
+	pidcwd := map[int]string{}
+	first := true
 	for i := range siChan {
+		if first {
+			pidcwd[i.pid] = absdir
+			first = false
+		}
 		if i.result < 0 {
 			continue
 		}
 		switch i.syscall {
+		case "clone":
+			pidcwd[i.result] = pidcwd[i.pid]
 		case "creat":
 			w[i.args[0][1:len(i.args[0])-1]] = true
 		case "open":
-			filename := pathrel(absdir, cwd, i.args[0][1:len(i.args[0])-1])
+			filename := pathrel(absdir, pidcwd[i.pid], i.args[0][1:len(i.args[0])-1])
 			args := i.args
 			switch {
 			case strings.Contains(args[1], "O_RDONLY"):
@@ -300,16 +307,16 @@ func StraceParse3(siChan <-chan Strace2Info, dir string) (map[string]bool, map[s
 				log.Fatalf("unable to determine operation with %s", args[1])
 			}
 		case "unlinkat":
-			filename := pathrel(absdir, cwd, i.args[0][1:len(i.args[0])-1])
+			filename := pathrel(absdir, pidcwd[i.pid], i.args[0][1:len(i.args[0])-1])
 			delete(r, filename)
 			delete(w, filename)
 		case "rename":
-			orig := pathrel(absdir, cwd, i.args[0][1:len(i.args[0])-1])
+			orig := pathrel(absdir, pidcwd[i.pid], i.args[0][1:len(i.args[0])-1])
 			delete(w, orig)
-			dest := pathrel(absdir, cwd, i.args[1][1:len(i.args[1])-1])
+			dest := pathrel(absdir, pidcwd[i.pid], i.args[1][1:len(i.args[1])-1])
 			w[dest] = true
 		case "chdir":
-			cwd = pathrel(absdir, cwd, i.args[0][1:len(i.args[0])-1])
+			pidcwd[i.pid] = pathrel(absdir, pidcwd[i.pid], i.args[0][1:len(i.args[0])-1])
 		}
 	}
 	return r, w
