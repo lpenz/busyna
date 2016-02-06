@@ -9,7 +9,7 @@ import (
 )
 
 func usage() {
-	fmt.Fprintf(os.Stderr, "Usage: %s <format: dot|make|busyna> <busyna.db> <output.mk/output.dot>\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "Usage: %s <format: dot|make|busyna|tup> <busyna.db> <output.mk/output.dot>\n", os.Args[0])
 	flag.PrintDefaults()
 }
 
@@ -34,6 +34,8 @@ func main() {
 		libbusyna.DeployDot(libbusyna.DbRead(db), output)
 	case "make":
 		libbusyna.DeployMake(libbusyna.DbRead(db), output)
+	case "tup":
+		libbusyna.DeployTup(libbusyna.DbRead(db), output)
 	default:
 		usage()
 		os.Exit(1)

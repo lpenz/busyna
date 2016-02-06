@@ -20,7 +20,7 @@ busyna.db: database with "run" information
    |
    | deploy: create the script for the target build system
    v
-Makefile/graphviz/SConstruct/etc.
+Makefile/graphviz/Tupfile.lua/etc.
 ```
 
 **busyna** can also be used to optimize an existing build system or convert it
@@ -88,7 +88,6 @@ details on the [Case studies](#case-studies)
 - Validate the implementation by building make-based software projects - the
   linux kernel, for instance.
 - Support further target build systems:
-  - [tup](http://gittup.org/tup/)
   - [scons](http://www.scons.org/)
   - [shake](http://shakebuild.com/)
 - Deal with `busyna.db` updates: perhaps a mode where the deploy command
