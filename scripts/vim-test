@@ -8,6 +8,10 @@ if ! [ -d vim-0 ]; then
     git clone https://github.com/vim/vim.git vim-0
     (cd vim-0; git reset --hard v7.4.1153)
 fi
+rm -f vim-0/src/po/ko.po vim-0/src/po/nb.po vim-0/src/po/nl.po \
+      vim-0/src/po/cs.cp1250.po vim-0/src/po/ja.sjis.po vim-0/src/po/ja.euc-jp.po \
+      vim-0/src/po/pl.cp1250.po vim-0/src/po/pl.UTF-8.po vim-0/src/po/ru.cp1251.po \
+      vim-0/src/po/sk.cp1250.po vim-0/src/po/uk.cp1251.po vim-0/src/po/zh_CN.cp936.po
 
 : busyna vim-test: create the busyna.rc script
 rm -rf vim-rc busyna.rc
