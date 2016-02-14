@@ -37,6 +37,9 @@ func StraceRun(command string, env map[string]string, dir string) <-chan string 
 	if env == nil {
 		env2 = nil
 	} else {
+		for _, kv := range os.Environ() {
+			env2 = append(env2, kv)
+		}
 		for k, v := range env {
 			env2 = append(env2, fmt.Sprint(k, "=", v))
 		}
