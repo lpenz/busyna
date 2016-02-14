@@ -292,6 +292,9 @@ func StraceParse3(siChan <-chan Strace2Info, dir string) (map[string]bool, map[s
 			pidcwd[i.result] = pidcwd[i.pid]
 		case "creat":
 			w[i.args[0][1:len(i.args[0])-1]] = true
+		case "execve":
+			filename := pathrel(absdir, pidcwd[i.pid], i.args[0][1:len(i.args[0])-1])
+			r[filename] = true
 		case "open":
 			filename := pathrel(absdir, pidcwd[i.pid], i.args[0][1:len(i.args[0])-1])
 			args := i.args

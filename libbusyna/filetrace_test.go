@@ -354,3 +354,27 @@ func TestFiletraceChdirPid(t *testing.T) {
 		}
 	}()
 }
+
+// TestFiletraceExec tests script execution
+func TestFiletraceExec(t *testing.T) {
+	ioutil.WriteFile("tester.c",
+		[]byte("#include <stdio.h>\nint main(void)\n{\n\tFILE *fd = fopen(\"t\", \"w\");\nfprintf(fd, \"test\");\nreturn 0;\n}\n"),
+		0777)
+	filetraceTest(t,
+		"gcc -o tester tester.c",
+		"",
+		map[string]bool{"tester.c": true, "tester": true},
+		map[string]bool{"tester": true})
+	filetraceTest(t,
+		"./tester",
+		"",
+		map[string]bool{"tester": true},
+		map[string]bool{"t": true})
+	defer func() {
+		for _, f := range []string{`tester.c`, `tester`, `t`} {
+			if err := os.Remove(f); err != nil {
+				t.Error(err)
+			}
+		}
+	}()
+}
