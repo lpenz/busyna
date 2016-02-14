@@ -220,15 +220,15 @@ func filetraceTest(t *testing.T, cmd string, dir string, rok map[string]bool, wo
 		straceRbase, _ = FileTrace("", nil, "")
 	}
 	rt, wt := FileTrace(cmd, nil, dir)
-	rtst := map[string]bool{}
+	rok2 := map[string]bool{}
 	for r := range rok {
-		rtst[r] = true
+		rok2[r] = true
 	}
 	for r := range straceRbase {
-		rtst[r] = true
+		rok2[r] = true
 	}
-	if !reflect.DeepEqual(rtst, rtst) {
-		t.Error("r", rt, "!=", rtst)
+	if !reflect.DeepEqual(rt, rok2) {
+		t.Error("r", rt, "!=", rok2)
 	}
 	if !reflect.DeepEqual(wt, wok) {
 		t.Error("w", wt, "!=", wok)
