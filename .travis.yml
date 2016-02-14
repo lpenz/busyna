@@ -1,3 +1,4 @@
+sudo: required # required by tup, as he uses /dev/fuse
 language: go
 go:
   - tip
@@ -6,6 +7,7 @@ addons:
     packages:
       - strace
       - graphviz
+      - libfuse-dev
 before_install:
   - go get github.com/axw/gocov/gocov
   - go get github.com/mattn/goveralls
@@ -14,6 +16,8 @@ before_install:
   - go get golang.org/x/tools/cmd/vet
   - if ! go get code.google.com/p/go.tools/cmd/cover; then go get golang.org/x/tools/cmd/cover; fi
   - git clone https://gist.github.com/0f22736320abe6be71ce.git $HOME/goclean
+  - git clone git://github.com/gittup/tup.git $HOME/tup
+  - (cd $HOME/tup; ./bootstrap.sh)
 script:
-  - ./goclean.sh
+  - PATH=$PATH:$HOME/tup ./goclean.sh
   - $HOME/gopath/bin/goveralls -coverprofile=profile.cov -service=travis-ci
