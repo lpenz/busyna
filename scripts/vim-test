@@ -71,3 +71,15 @@ rm -rf busyna.dot busyna-dot.png
 busyna-deploy dot busyna.db busyna.dot
 dot -Tpdf -o busyna-dot.pdf busyna.dot 2>&1 | tee log-dot.txt
 
+: busyna vim-test: test deploying tup
+rm -rf vim-tup busyna.tup.lua
+busyna-deploy tup busyna.db busyna.tup.lua
+cp -R vim-0 vim-tup
+(
+cd vim-tup
+cp ../busyna.tup.lua Tupfile.lua
+tup init
+tup --verbose
+./src/vim --version
+) 2>&1 | tee log-tup.txt
+
