@@ -25,7 +25,7 @@ sed -i 's/^#\s*QUOTESED\s*=.*/QUOTESED=cat/' src/Makefile
 sed -i 's@\(The name of the makefile MUST .*\)(.*@\1@' src/Makefile
 busyna-extract make ../busyna.rc
 ./src/vim --version
-) 2>&1 | tee lua-rc.txt
+) 2>&1 | tee log-rc.txt
 
 : busyna vim-test: Test the script with shell
 cp -Rl vim-0 vim-sh
@@ -33,7 +33,7 @@ cp -Rl vim-0 vim-sh
 cd vim-sh
 /bin/sh ../busyna.rc
 ./src/vim --version
-) 2>&1 | tee lua-sh.txt
+) 2>&1 | tee log-sh.txt
 
 : busyna vim-test: create busyna.db
 cp -Rl vim-0 vim-db
@@ -42,7 +42,7 @@ cd vim-db
 busyna-run ../busyna.rc ../busyna.db
 ./src/vim --version
 : busyna.db created
-) 2>&1 | tee lua-db.txt
+) 2>&1 | tee log-db.txt
 
 : busyna vim-test: test deploying busyna.rc
 busyna-deploy busyna busyna.db busyna.rc2
@@ -52,7 +52,7 @@ cd vim-rc2
 mkdir src/objects
 /bin/sh ../busyna.rc2
 ./src/vim --version
-) 2>&1 | tee lua-rc2.txt
+) 2>&1 | tee log-rc2.txt
 
 : busyna vim-test: test deploying make
 busyna-deploy make busyna.db busyna.mk
@@ -61,9 +61,9 @@ cp -R vim-0 vim-make
 cd vim-make
 make -f ../busyna.mk
 ./src/vim --version
-) 2>&1 | tee lua-make.txt
+) 2>&1 | tee log-make.txt
 
 : busyna vim-test: test deploying dot
 busyna-deploy dot busyna.db busyna.dot
-dot -Tpdf -o busyna-dot.pdf busyna.dot 2>&1 | tee lua-dot.txt
+dot -Tpdf -o busyna-dot.pdf busyna.dot 2>&1 | tee log-dot.txt
 
