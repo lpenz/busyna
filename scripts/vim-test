@@ -2,20 +2,15 @@
 
 set -x -e
 
-#: Cleanup
-rm -rf vim-rc busyna.rc
-rm -rf vim-db busyna.db
-rm -rf vim-rc2 busyna.rc2
-rm -rf vim-make busyna.mk
-rm -rf busyna.dot busyna-dot.png
-
+: busyna vim-test: clone vim
 if ! [ -d vim-0 ]; then
     : busyna vim-test: clone original vim to vim-0
     git clone https://github.com/vim/vim.git vim-0
     (cd vim-0; git reset --hard v7.4.1153)
 fi
 
-: busyna vim-test: Create the busyna.rc script
+: busyna vim-test: create the busyna.rc script
+rm -rf vim-rc busyna.rc
 cp -R vim-0 vim-rc
 (
 cd vim-rc
@@ -27,7 +22,8 @@ busyna-extract make ../busyna.rc
 ./src/vim --version
 ) 2>&1 | tee log-rc.txt
 
-: busyna vim-test: Test the script with shell
+: busyna vim-test: test the script with shell
+rm -rf vim-sh
 cp -Rl vim-0 vim-sh
 (
 cd vim-sh
@@ -36,6 +32,7 @@ cd vim-sh
 ) 2>&1 | tee log-sh.txt
 
 : busyna vim-test: create busyna.db
+rm -rf vim-db busyna.db
 cp -Rl vim-0 vim-db
 (
 cd vim-db
@@ -45,6 +42,7 @@ busyna-run ../busyna.rc ../busyna.db
 ) 2>&1 | tee log-db.txt
 
 : busyna vim-test: test deploying busyna.rc
+rm -rf vim-rc2 busyna.rc2
 busyna-deploy busyna busyna.db busyna.rc2
 cp -Rl vim-0 vim-rc2
 (
@@ -55,6 +53,7 @@ mkdir src/objects
 ) 2>&1 | tee log-rc2.txt
 
 : busyna vim-test: test deploying make
+rm -rf vim-make busyna.mk
 busyna-deploy make busyna.db busyna.mk
 cp -R vim-0 vim-make
 (
@@ -64,6 +63,7 @@ make -f ../busyna.mk
 ) 2>&1 | tee log-make.txt
 
 : busyna vim-test: test deploying dot
+rm -rf busyna.dot busyna-dot.png
 busyna-deploy dot busyna.db busyna.dot
 dot -Tpdf -o busyna-dot.pdf busyna.dot 2>&1 | tee log-dot.txt
 
