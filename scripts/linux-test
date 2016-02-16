@@ -1,0 +1,90 @@
+#!/bin/bash
+
+set -x -e
+
+: busyna linux-test: clone linux
+if ! [ -d linux-0 ]; then
+    : busyna linux-test: Clone original linux to linux-0
+    git clone git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-0
+fi
+
+: busyna linux-test: create the busyna.rc script
+rm -rf linux-rc busyna.rc
+cp -Rl linux-0 linux-rc
+(
+cd linux-rc
+sed -i 's@^set -e$@set -e -x@' scripts/link-vmlinux.sh
+sed -i 's@[$][{]MAKE[}]@make@g' scripts/link-vmlinux.sh
+make allnoconfig
+busyna-extract make ../busyna.rc
+test -s arch/x86/boot/bzImage
+) 2>&1 | tee log-rc.txt
+
+: busyna linux-test: test the script with shell
+rm -rf linux-sh
+cp -Rl linux-0 linux-sh
+(
+cd linux-sh
+sed -i 's@^set -e$@set -e -x@' scripts/link-vmlinux.sh
+sed -i 's@[$][{]MAKE[}]@make@g' scripts/link-vmlinux.sh
+make allnoconfig
+/bin/sh ../busyna.rc
+test -s arch/x86/boot/bzImage
+) 2>&1 | tee log-sh.txt
+
+: busyna linux-test: create busyna.db
+rm -rf linux-db busyna.db
+cp -Rl linux-0 linux-db
+(
+cd linux-db
+sed -i 's@^set -e$@set -e -x@' scripts/link-vmlinux.sh
+sed -i 's@[$][{]MAKE[}]@make@g' scripts/link-vmlinux.sh
+make allnoconfig
+busyna-run ../busyna.rc ../busyna.db
+test -s arch/x86/boot/bzImage
+: busyna linux-test: busyna.db created
+) 2>&1 | tee log-db.txt
+
+: busyna linux-test: test deploying busyna.rc
+rm -rf linux-rc2 busyna.rc2
+busyna-deploy busyna busyna.db busyna.rc2
+cp -Rl linux-0 linux-rc2
+(
+cd linux-rc2
+sed -i 's@^set -e$@set -e -x@' scripts/link-vmlinux.sh
+sed -i 's@[$][{]MAKE[}]@make@g' scripts/link-vmlinux.sh
+make allnoconfig
+/bin/sh ../busyna.rc
+test -s arch/x86/boot/bzImage
+) 2>&1 | tee log-rc2.txt
+
+: busyna linux-test: test deploying make
+rm -rf linux-make busyna.mk
+busyna-deploy make busyna.db busyna.mk
+cp -R linux-0 linux-make
+(
+cd linux-make
+make -f ../busyna.mk
+test -s arch/x86/boot/bzImage
+) 2>&1 | tee log-make.txt
+
+: busyna linux-test: test deploying dot
+rm -rf busyna.dot busyna-dot.png
+busyna-deploy dot  busyna.db busyna.dot
+dot -Tpdf -o busyna-dot.pdf busyna.dot
+
+: busyna linux-test: test deploying tup
+rm -rf linux-tup busyna.tup.lua
+busyna-deploy tup busyna.db busyna.tup.lua
+cp -R linux-0 linux-tup
+(
+cd linux-tup
+sed -i 's@^set -e$@set -e -x@' scripts/link-vmlinux.sh
+sed -i 's@[$][{]MAKE[}]@make@g' scripts/link-vmlinux.sh
+make allnoconfig
+cp ../busyna.tup.lua Tupfile.lua
+tup init
+tup --verbose
+test -s arch/x86/boot/bzImage
+) 2>&1 | tee log-tup.txt
+
