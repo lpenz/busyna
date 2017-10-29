@@ -13,7 +13,6 @@ before_install:
   - go get github.com/mattn/goveralls
   - go get github.com/bradfitz/goimports
   - go get github.com/golang/lint/golint
-  - go get golang.org/x/tools/cmd/vet
   - if ! go get code.google.com/p/go.tools/cmd/cover; then go get golang.org/x/tools/cmd/cover; fi
   - git clone https://gist.github.com/0f22736320abe6be71ce.git $HOME/goclean
   - git clone git://github.com/gittup/tup.git $HOME/tup
