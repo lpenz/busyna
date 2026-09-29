@@ -15,7 +15,10 @@ keywords = ["command-line"]
 [dependencies]
 clap = { version = "4.6.7", features = ["derive"] }
 color-eyre = "0.6.5"
-tokio = { version = "1.53.1", features = ["macros", "rt"] }
+libc = "0.2"
+tokio = { version = "1.53.1", features = ["fs", "io-util", "macros", "rt", "process"] }
+tokio-process-stream = "0.4"
+tokio-stream = "0.1"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 
 [build-dependencies]
